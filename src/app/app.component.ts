@@ -12,6 +12,8 @@ import mieV from './shaders/mie.vert';
 // @ts-ignore
 import mieF from './shaders/mie.frag';
 
+const DEG_TO_RAD = Math.PI / 180.0;
+
 @Component({
   selector: 'app-root',
   templateUrl: './app.component.html',
@@ -23,51 +25,55 @@ export class AppComponent {
 
   settings = {
     lightPosition: {
+      theta: 0,
+      phi: 0,
       x: 0.5,
       y: 0.25,
       z: 0.5
     },
     cameraRotation: {
-      theta: 0
+      theta: 0,
+      phi: 23.4
     },
-    animate: true
+    animate: false
   };
 
   surface;
   atmosphere;
-  x;
 
   ngOnInit() {
     const gui = new dat.GUI();
 
     gui.add(this.settings, 'animate');
 
-    const lightF = gui.addFolder('Light Position');
-    lightF.add(this.settings.lightPosition, 'x', -1, 1, 0.01).onChange(() => {
+    const lightF = gui.addFolder('Light Rotation');
+    lightF.add(this.settings.lightPosition, 'theta', 0, 360, 0.001).onChange(() => {
       this.updateLight();
     });
-    lightF.add(this.settings.lightPosition, 'y', -1, 1, 0.01).onChange(() => {
-      this.updateLight();
-    });
-    lightF.add(this.settings.lightPosition, 'z', -1, 1, 0.01).onChange(() => {
+    lightF.add(this.settings.lightPosition, 'phi', -90, 90, 0.001).onChange(() => {
       this.updateLight();
     });
 
     const cameraF = gui.addFolder('Camera Position');
-    this.x = cameraF.add(this.settings.cameraRotation, 'theta', 0, Math.PI * 2.0, 0.0001);
+    cameraF.add(this.settings.cameraRotation, 'theta', 0, 360, 0.001);
+    cameraF.add(this.settings.cameraRotation, 'phi', -90, 90, 0.001);
   }
 
   updateLight() {
-    this.surface.material.uniforms.v3LightPosition.value = new THREE.Vector3(
-      this.settings.lightPosition.x,
-      this.settings.lightPosition.y,
-      this.settings.lightPosition.z).normalize();
+    const light = this.calculateLight();
+    this.surface.material.uniforms.v3LightPosition.value = light;
+    this.atmosphere.material.uniforms.v3LightPosition.value = light;
+  }
 
-    this.atmosphere.material.uniforms.v3LightPosition.value = new THREE.Vector3(
-      this.settings.lightPosition.x,
-      this.settings.lightPosition.y,
-      this.settings.lightPosition.z).normalize();
+  calculateLight() {
+    const theta = this.settings.lightPosition.theta * DEG_TO_RAD;
+    const phi = this.settings.lightPosition.phi * DEG_TO_RAD;
 
+    const x = Math.sin(theta) * Math.cos(phi);
+    const y = Math.sin(theta) * Math.sin(phi);
+    const z = Math.cos(theta);
+
+    return new THREE.Vector3(x, y, z).normalize();
   }
 
   ngAfterViewInit() {
@@ -84,17 +90,11 @@ export class AppComponent {
     this.surface = this.setupSurface();
     scene.add(this.surface);
 
-    // const clouds = this.setupClouds();
-    // scene.add(clouds);
-
     this.atmosphere = this.setupAtmosphere();
     scene.add(this.atmosphere);
 
     //const stars = this.setupStars();
     //scene.add(stars);
-
-    //let f = 0.0; //Math.PI - 3.6;
-    let g = 0.0;
 
     const t = this;
     animate();
@@ -105,12 +105,12 @@ export class AppComponent {
       const eye = new THREE.Vector3(0, 0, 100.0 * 1.9);
 
       if (t.settings.animate) {
-        t.settings.cameraRotation.theta += 0.001;
-        g += 0.008;
+        t.settings.cameraRotation.theta += 0.05;
       }
 
-      // const euler = new THREE.Euler(g / 60 + 12, -f * 10 + 20, 0);
-      const euler = new THREE.Euler(0, t.settings.cameraRotation.theta, 0);
+      const euler = new THREE.Euler(
+        -t.settings.cameraRotation.phi * DEG_TO_RAD,
+        t.settings.cameraRotation.theta * DEG_TO_RAD, 0);
       const matrix = new THREE.Matrix4().makeRotationFromEuler(euler);
       eye.applyMatrix4(matrix);
 
@@ -118,15 +118,7 @@ export class AppComponent {
       camera.position.y = eye.y;
       camera.position.z = eye.z;
 
-      // t.settings.cameraPosition.x = eye.x;
-      // t.settings.cameraPosition.y = eye.y;
-      // t.settings.cameraPosition.z = eye.z;
-
-      if (t.settings.animate) {
-        //t.x.updateDisplay();
-      }
-
-      camera.rotation.x = -24.0 * Math.PI / 180.0;
+      camera.rotation.x = -24.0 * DEG_TO_RAD;
       camera.lookAt(new THREE.Vector3(0, 0, 0));
 
       renderer.render(scene, camera);
@@ -237,7 +229,7 @@ export class AppComponent {
     const uniforms = {
       v3LightPosition: {
         type: "v3",
-        value: new THREE.Vector3(this.settings.lightPosition.x, this.settings.lightPosition.y, this.settings.lightPosition.z).normalize()
+        value: this.calculateLight()
       },
       v3InvWavelength: {
         type: "v3",
