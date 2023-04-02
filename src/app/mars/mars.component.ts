@@ -1,7 +1,9 @@
 import { Component, ElementRef, ViewChild } from '@angular/core';
 
-import * as THREE from 'three';
+import { DEG_TO_RAD, setupUniforms } from '../constants';
+
 import * as dat from 'dat.gui';
+import * as THREE from 'three';
 
 // @ts-ignore
 import rayleighV from '../shaders/rayleigh.vert';
@@ -10,15 +12,14 @@ import rayleighF from '../shaders/rayleigh.frag';
 // @ts-ignore
 import mieV from '../shaders/mie.vert';
 // @ts-ignore
-import mieF from '../shaders/mie.frag';
-import { DEG_TO_RAD, setupUniforms } from '../constants';
+import mieF from '../shaders/mars.frag';
 
 @Component({
-  selector: 'earth',
-  templateUrl: './earth.component.html',
-  styleUrls: ['./earth.component.scss']
+  selector: 'mars',
+  templateUrl: './mars.component.html',
+  styleUrls: ['./mars.component.scss']
 })
-export class EarthComponent {
+export class MarsComponent {
 
   @ViewChild('canvas') canvas: ElementRef;
 
@@ -28,8 +29,8 @@ export class EarthComponent {
     ESun: 20.0,
     g: -0.950,
     innerRadius: 100,
-    outerRadius: 102.5,
-    wavelength: [0.650, 0.570, 0.475],
+    outerRadius: 101,
+    wavelength: [0.41, 0.45, 0.5],
     scaleDepth: 0.25,
     mieScaleDepth: 0.1
   };
@@ -136,28 +137,16 @@ export class EarthComponent {
   }
 
   setupSurface() {
-    const diffuse = new THREE.TextureLoader().load('./assets/images/8081_earthmap4k.jpg');
-    const diffuseNight = new THREE.TextureLoader().load('./assets/images/8081_earthlights4k.jpg');
-    const clouds = new THREE.TextureLoader().load('./assets/images/8081_earthhiresclouds4K.jpg');
-    const normalMap = new THREE.TextureLoader().load('./assets/images/earth-normal.jpg');
-    const specularMap = new THREE.TextureLoader().load('./assets/images/Ocean_Mask.png');
+    const diffuse = new THREE.TextureLoader().load('./assets/images/Mars_4k.jpg');
+    const normalMap = new THREE.TextureLoader().load('./assets/images/Mars-normalmap_4k.jpg');
 
     const uniforms = setupUniforms(this.atmosphere, this.calculateLight());
     uniforms['tDiffuse'] = {
       value: diffuse
     };
-    uniforms['tDiffuseNight'] = {
-      value: diffuseNight
-    };
-    uniforms['tClouds'] = {
-      value: clouds
-    };
     uniforms['tNormalMap'] = {
       value: normalMap
     };
-    uniforms['tSpecularMap'] = {
-      value: specularMap
-    }
 
     const material = new THREE.ShaderMaterial({
       uniforms: uniforms,
@@ -171,19 +160,8 @@ export class EarthComponent {
     return surface;
   }
 
-  setupClouds() {
-    const material = new THREE.MeshPhongMaterial({
-      map: new THREE.TextureLoader().load('./assets/images/8081_earthhiresclouds4K.jpg'),
-      blending: THREE.CustomBlending,
-      blendEquation: THREE.MaxEquation
-    });
-
-    const clouds = new THREE.Mesh(new THREE.SphereGeometry(102, 500, 500), material);
-    return clouds;
-  }
-
   setupSky() {
-    const geometry = new THREE.SphereGeometry(102.5, 500, 500);
+    const geometry = new THREE.SphereGeometry(101, 500, 500);
 
     const material = new THREE.ShaderMaterial({
       vertexShader: rayleighV,
