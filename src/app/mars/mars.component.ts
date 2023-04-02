@@ -12,7 +12,7 @@ import rayleighF from '../shaders/rayleigh.frag';
 // @ts-ignore
 import mieV from '../shaders/mie.vert';
 // @ts-ignore
-import mieF from '../shaders/mars.frag';
+import mieF from '../shaders/mie.frag';
 
 @Component({
   selector: 'mars',

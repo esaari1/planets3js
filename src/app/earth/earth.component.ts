@@ -1,4 +1,4 @@
-import { Component, ElementRef, ViewChild } from '@angular/core';
+import { AfterViewInit, Component, ElementRef, ViewChild } from '@angular/core';
 
 import * as THREE from 'three';
 import * as dat from 'dat.gui';
@@ -10,7 +10,7 @@ import rayleighF from '../shaders/rayleigh.frag';
 // @ts-ignore
 import mieV from '../shaders/mie.vert';
 // @ts-ignore
-import mieF from '../shaders/mie.frag';
+import mieF from '../shaders/earth.frag';
 import { DEG_TO_RAD, setupUniforms } from '../constants';
 
 @Component({
@@ -18,7 +18,7 @@ import { DEG_TO_RAD, setupUniforms } from '../constants';
   templateUrl: './earth.component.html',
   styleUrls: ['./earth.component.scss']
 })
-export class EarthComponent {
+export class EarthComponent implements  AfterViewInit {
 
   @ViewChild('canvas') canvas: ElementRef;
 
