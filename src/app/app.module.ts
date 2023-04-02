@@ -5,12 +5,14 @@ import { RouterModule } from '@angular/router';
 import { AppComponent } from './app.component';
 import { EarthComponent } from './earth/earth.component';
 import { MarsComponent } from './mars/mars.component';
+import { PlanetSettingsComponent } from './planet-settings/planet-settings.component';
 
 @NgModule({
   declarations: [
     AppComponent,
     EarthComponent,
-    MarsComponent
+    MarsComponent,
+    PlanetSettingsComponent
   ],
   imports: [
     BrowserModule,

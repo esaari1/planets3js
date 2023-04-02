@@ -1,7 +1,7 @@
 import { AfterViewInit, Component, ElementRef, ViewChild } from '@angular/core';
 
 import * as THREE from 'three';
-import * as dat from 'dat.gui';
+import { DEG_TO_RAD, Rotation, setupUniforms } from '../constants';
 
 // @ts-ignore
 import rayleighV from '../shaders/rayleigh.vert';
@@ -11,14 +11,13 @@ import rayleighF from '../shaders/rayleigh.frag';
 import mieV from '../shaders/mie.vert';
 // @ts-ignore
 import mieF from '../shaders/earth.frag';
-import { DEG_TO_RAD, setupUniforms } from '../constants';
 
 @Component({
   selector: 'earth',
   templateUrl: './earth.component.html',
   styleUrls: ['./earth.component.scss']
 })
-export class EarthComponent implements  AfterViewInit {
+export class EarthComponent implements AfterViewInit {
 
   @ViewChild('canvas') canvas: ElementRef;
 
@@ -34,60 +33,10 @@ export class EarthComponent implements  AfterViewInit {
     mieScaleDepth: 0.1
   };
 
-  settings = {
-    lightPosition: {
-      theta: 0,
-      phi: 0,
-      x: 0.5,
-      y: 0.25,
-      z: 0.5
-    },
-    cameraRotation: {
-      theta: 0,
-      phi: 23.4
-    },
-    animate: false
-  };
-
-  surface;
-  sky;
-
-  ngOnInit() {
-    const gui = new dat.GUI();
-
-    gui.add(this.settings, 'animate');
-
-    const lightF = gui.addFolder('Light Rotation');
-    lightF.open();
-    lightF.add(this.settings.lightPosition, 'theta', 0, 360, 0.001).onChange(() => {
-      this.updateLight();
-    });
-    lightF.add(this.settings.lightPosition, 'phi', 0, 180, 0.001).onChange(() => {
-      this.updateLight();
-    });
-
-    const cameraF = gui.addFolder('Camera Position');
-    cameraF.open();
-    cameraF.add(this.settings.cameraRotation, 'theta', 0, 360, 0.001);
-    cameraF.add(this.settings.cameraRotation, 'phi', -90, 90, 0.001);
-  }
-
-  updateLight() {
-    const light = this.calculateLight();
-    this.surface.material.uniforms.v3LightPosition.value = light;
-    this.sky.material.uniforms.v3LightPosition.value = light;
-  }
-
-  calculateLight() {
-    const theta = this.settings.lightPosition.theta * DEG_TO_RAD;
-    const phi = this.settings.lightPosition.phi * DEG_TO_RAD;
-
-    const s = new THREE.Spherical(1, phi, theta);
-    const v = new THREE.Vector3();
-    v.setFromSpherical(s);
-
-    return v.normalize();
-  }
+  surface: THREE.Mesh;
+  sky: THREE.Mesh;
+  cameraRotation: Rotation = { theta: 0, phi: 0 };
+  animate: boolean = false;
 
   ngAfterViewInit() {
     const scene = new THREE.Scene();
@@ -114,13 +63,13 @@ export class EarthComponent implements  AfterViewInit {
 
       const eye = new THREE.Vector3(0, 0, 100.0 * 1.9);
 
-      if (t.settings.animate) {
-        t.settings.cameraRotation.theta += 0.05;
+      if (t.animate) {
+        t.cameraRotation.theta += 0.05;
       }
 
       const euler = new THREE.Euler(
-        -t.settings.cameraRotation.phi * DEG_TO_RAD,
-        t.settings.cameraRotation.theta * DEG_TO_RAD, 0);
+        -t.cameraRotation.phi * DEG_TO_RAD,
+        t.cameraRotation.theta * DEG_TO_RAD, 0);
       const matrix = new THREE.Matrix4().makeRotationFromEuler(euler);
       eye.applyMatrix4(matrix);
 
@@ -135,6 +84,11 @@ export class EarthComponent implements  AfterViewInit {
     }
   }
 
+  updateLight(light: THREE.Vector3) {
+    this.surface.material.uniforms.v3LightPosition.value = light;
+    this.sky.material.uniforms.v3LightPosition.value = light;
+  }
+
   setupSurface() {
     const diffuse = new THREE.TextureLoader().load('./assets/images/8081_earthmap4k.jpg');
     const diffuseNight = new THREE.TextureLoader().load('./assets/images/8081_earthlights4k.jpg');
@@ -142,7 +96,7 @@ export class EarthComponent implements  AfterViewInit {
     const normalMap = new THREE.TextureLoader().load('./assets/images/earth-normal.jpg');
     const specularMap = new THREE.TextureLoader().load('./assets/images/Ocean_Mask.png');
 
-    const uniforms = setupUniforms(this.atmosphere, this.calculateLight());
+    const uniforms = setupUniforms(this.atmosphere);
     uniforms['tDiffuse'] = {
       value: diffuse
     };
@@ -188,7 +142,7 @@ export class EarthComponent implements  AfterViewInit {
     const material = new THREE.ShaderMaterial({
       vertexShader: rayleighV,
       fragmentShader: rayleighF,
-      uniforms: setupUniforms(this.atmosphere, this.calculateLight()),
+      uniforms: setupUniforms(this.atmosphere),
       side: THREE.BackSide,
       transparent: true
     });
