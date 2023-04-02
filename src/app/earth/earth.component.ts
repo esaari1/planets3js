@@ -51,7 +51,7 @@ export class EarthComponent {
     lightF.add(this.settings.lightPosition, 'theta', 0, 360, 0.001).onChange(() => {
       this.updateLight();
     });
-    lightF.add(this.settings.lightPosition, 'phi', -90, 90, 0.001).onChange(() => {
+    lightF.add(this.settings.lightPosition, 'phi', 0, 180, 0.001).onChange(() => {
       this.updateLight();
     });
 
@@ -71,11 +71,11 @@ export class EarthComponent {
     const theta = this.settings.lightPosition.theta * DEG_TO_RAD;
     const phi = this.settings.lightPosition.phi * DEG_TO_RAD;
 
-    const x = Math.sin(theta) * Math.cos(phi);
-    const y = Math.sin(theta) * Math.sin(phi);
-    const z = Math.cos(theta);
+    const s = new THREE.Spherical(1, phi, theta);
+    const v = new THREE.Vector3();
+    v.setFromSpherical(s);
 
-    return new THREE.Vector3(x, y, z).normalize();
+    return v.normalize();
   }
 
   ngAfterViewInit() {
@@ -94,9 +94,6 @@ export class EarthComponent {
 
     this.atmosphere = this.setupAtmosphere();
     scene.add(this.atmosphere);
-
-    //const stars = this.setupStars();
-    //scene.add(stars);
 
     const t = this;
     animate();
@@ -128,18 +125,31 @@ export class EarthComponent {
   }
 
   setupSurface() {
-    // const surfaceMat = new THREE.MeshPhongMaterial({
-    //   //map: new THREE.TextureLoader().load('./assets/images/8081_earthmap4k.jpg'),
-    //   normalMap: new THREE.TextureLoader().load('./assets/images/earth-normal.jpg'),
-    //   specularMap: new THREE.TextureLoader().load('./assets/images/8081_earthspec4k-2.jpg'),
-    //   specular: 0x222222,
-    //   shininess: 40,
-    //   normalScale: new THREE.Vector2(5, -5),
-    //   color: 0x000000
-    // });
+    const diffuse = new THREE.TextureLoader().load('./assets/images/8081_earthmap4k.jpg');
+    const diffuseNight = new THREE.TextureLoader().load('./assets/images/8081_earthlights4k.jpg');
+    const clouds = new THREE.TextureLoader().load('./assets/images/8081_earthhiresclouds4K.jpg');
+    const normalMap = new THREE.TextureLoader().load('./assets/images/earth-normal.jpg');
+    const specularMap = new THREE.TextureLoader().load('./assets/images/Ocean_Mask.png');
+
+    const uniforms = this.setupUniforms();
+    uniforms['tDiffuse'] = {
+      value: diffuse
+    };
+    uniforms['tDiffuseNight'] = {
+      value: diffuseNight
+    };
+    uniforms['tClouds'] = {
+      value: clouds
+    };
+    uniforms['tNormalMap'] = {
+      value: normalMap
+    };
+    uniforms['tSpecularMap'] = {
+      value: specularMap
+    }
 
     const material = new THREE.ShaderMaterial({
-      uniforms: this.setupUniforms(),
+      uniforms: uniforms,
       vertexShader: mieV,
       fragmentShader: mieF,
     });
@@ -162,51 +172,17 @@ export class EarthComponent {
   }
 
   setupAtmosphere() {
-    // const atmosphere = new THREE.Mesh(new THREE.SphereGeometry(104.5, 128, 64), new THREE.ShaderMaterial({
-    //   vertexShader: vAtmosphere,
-    //   fragmentShader: fAtmosphere,
-    //   blending: THREE.AdditiveBlending,
-    //   uniforms: {
-    //     lightDirection: {
-    //       value: this.lightPos
-    //     }
-    //   }
-    // }));
+    const geometry = new THREE.SphereGeometry(102.5, 500, 500);
 
-    const atmosphere = new THREE.Mesh(new THREE.SphereGeometry(102.5, 500, 500), new THREE.ShaderMaterial({
+    const material = new THREE.ShaderMaterial({
       vertexShader: rayleighV,
       fragmentShader: rayleighF,
       uniforms: this.setupUniforms(),
       side: THREE.BackSide,
       transparent: true
-    }));
-
-    return atmosphere;
-  }
-
-  setupStars() {
-    const starMaterial = new THREE.PointsMaterial({
-      color: 0xffffff,
-      size: 5.0
     });
 
-    const starPoints = [];
-    for (let i = 0; i < 5000; i++) {
-      const theta = Math.random() * Math.PI * 2.0;
-      const phi = Math.random() * Math.PI;
-
-      const r = 1000.0;
-      const x = r * Math.sin(theta) * Math.cos(phi);
-      const y = r * Math.sin(theta) * Math.sin(phi);
-      const z = r * Math.cos(theta);
-      starPoints.push(x, y, z);
-    }
-
-    const starGeometry = new THREE.BufferGeometry();
-    starGeometry.setAttribute('position', new THREE.Float32BufferAttribute(starPoints, 3));
-
-    const stars = new THREE.Points(starGeometry, starMaterial);
-    return stars;
+    return new THREE.Mesh(geometry, material);
   }
 
   setupUniforms() {
@@ -221,12 +197,6 @@ export class EarthComponent {
       scaleDepth: 0.25,
       mieScaleDepth: 0.1
     };
-
-    const diffuse = new THREE.TextureLoader().load('./assets/images/8081_earthmap4k.jpg');
-    const diffuseNight = new THREE.TextureLoader().load('./assets/images/8081_earthlights4k.jpg');
-    const clouds = new THREE.TextureLoader().load('./assets/images/8081_earthhiresclouds4K.jpg');
-    const normalMap = new THREE.TextureLoader().load('./assets/images/earth-normal.jpg');
-    const specularMap = new THREE.TextureLoader().load('./assets/images/8081_earthspec4k-2.jpg');
 
     const uniforms = {
       v3LightPosition: {
@@ -305,23 +275,6 @@ export class EarthComponent {
         type: "f",
         value: 3.0
       },
-      tDiffuse: {
-        type: "t",
-        value: diffuse
-      },
-      tDiffuseNight: {
-        type: "t",
-        value: diffuseNight
-      },
-      tClouds: {
-        value: clouds
-      },
-      tNormalMap: {
-        value: normalMap
-      },
-      tSpecularMap: {
-        value: specularMap
-      },
       tDisplacement: {
         type: "t",
         value: 0
@@ -338,5 +291,4 @@ export class EarthComponent {
 
     return uniforms;
   }
-
 }
