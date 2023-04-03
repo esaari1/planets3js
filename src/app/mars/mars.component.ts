@@ -1,8 +1,9 @@
 import { Component, ElementRef, ViewChild } from '@angular/core';
 
-import { DEG_TO_RAD, Rotation, setupUniforms } from '../constants';
+import { setupUniforms } from '../constants';
 
 import * as THREE from 'three';
+import { OrbitControls } from '../OrbitControls.js';
 
 // @ts-ignore
 import rayleighV from '../shaders/rayleigh.vert';
@@ -36,12 +37,16 @@ export class MarsComponent {
 
   surface: THREE.Mesh;
   sky: THREE.Mesh;
-  cameraRotation: Rotation = { theta: 0, phi: 0 };
-  animate: boolean = false;
+
+  ngOnInit() {
+    this.surface = this.setupSurface();
+    this.sky = this.setupSky();
+  }
 
   ngAfterViewInit() {
     const scene = new THREE.Scene();
     const camera = new THREE.PerspectiveCamera(70, window.innerWidth / window.innerHeight, 0.1, 1000);
+    camera.position.set(0, 0, 190);
 
     const renderer = new THREE.WebGLRenderer({
       antialias: true,
@@ -50,10 +55,9 @@ export class MarsComponent {
     renderer.setSize(window.innerWidth, window.innerHeight);
     renderer.setPixelRatio(window.devicePixelRatio);
 
-    this.surface = this.setupSurface();
-    scene.add(this.surface);
+    const controls = new OrbitControls(camera, renderer.domElement);
 
-    this.sky = this.setupSky();
+    scene.add(this.surface);
     scene.add(this.sky);
 
     const t = this;
@@ -61,26 +65,7 @@ export class MarsComponent {
 
     function animate() {
       requestAnimationFrame(animate);
-
-      const eye = new THREE.Vector3(0, 0, 100.0 * 1.9);
-
-      if (t.animate) {
-        t.cameraRotation.theta += 0.05;
-      }
-
-      const euler = new THREE.Euler(
-        -t.cameraRotation.phi * DEG_TO_RAD,
-        t.cameraRotation.theta * DEG_TO_RAD, 0);
-      const matrix = new THREE.Matrix4().makeRotationFromEuler(euler);
-      eye.applyMatrix4(matrix);
-
-      camera.position.x = eye.x;
-      camera.position.y = eye.y;
-      camera.position.z = eye.z;
-
-      camera.rotation.x = -24.0 * DEG_TO_RAD;
-      camera.lookAt(new THREE.Vector3(0, 0, 0));
-
+      controls.update();
       renderer.render(scene, camera);
     }
   }

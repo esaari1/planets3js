@@ -2,11 +2,6 @@ import * as THREE from 'three';
 
 export const DEG_TO_RAD = Math.PI / 180.0;
 
-export interface Rotation {
-    theta: number;
-    phi: number;
-}
-
 export function setupUniforms(atmosphere) {
     const uniforms = {
         v3LightPosition: {
