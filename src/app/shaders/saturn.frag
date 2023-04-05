@@ -1,5 +1,6 @@
 uniform sampler2D tDiffuse;
 uniform sampler2D ringsTexture;
+uniform vec2 ringsRadius;
 
 varying vec3 vNormal;
 varying vec2 vUv;
@@ -24,8 +25,8 @@ void main() {
                 vec3 p = vPosition + light * t;
                 vec3 v = p - vec3(0.0, 0.0, 0.0);
                 float d2 = length(v);
-                if (d2 < 233.0 && d2 > 124.0) {
-                    float s = (d2 - 124.0) / (233.0 - 124.0);
+                if (d2 < ringsRadius.y && d2 > ringsRadius.x) {
+                    float s = (d2 - ringsRadius.x) / (ringsRadius.y - ringsRadius.x);
                     alpha = texture2D(ringsTexture, vec2(s, 0.0)).a;
                 }
             }

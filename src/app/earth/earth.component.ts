@@ -1,7 +1,7 @@
 import { AfterViewInit, Component, ElementRef, ViewChild } from '@angular/core';
 
 import * as THREE from 'three';
-import { OrbitControls } from '../OrbitControls.js';
+import { OrbitControls } from 'three/examples/jsm/controls/OrbitControls.js';
 
 import { setupUniforms } from '../constants';
 

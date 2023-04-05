@@ -8,6 +8,8 @@ import { MarsComponent } from './mars/mars.component';
 import { PlanetSettingsComponent } from './planet-settings/planet-settings.component';
 import { JupiterComponent } from './jupiter/jupiter.component';
 import { SaturnComponent } from './saturn/saturn.component';
+import { UranusComponent } from './uranus/uranus.component';
+import { SystemComponent } from './system/system.component';
 
 @NgModule({
   declarations: [
@@ -16,16 +18,19 @@ import { SaturnComponent } from './saturn/saturn.component';
     MarsComponent,
     PlanetSettingsComponent,
     JupiterComponent,
-    SaturnComponent
+    SaturnComponent,
+    UranusComponent,
+    SystemComponent
   ],
   imports: [
     BrowserModule,
     RouterModule.forRoot([
+      { path: '', component: SystemComponent },
       { path: 'earth', component: EarthComponent },
       { path: 'mars', component: MarsComponent },
       { path: 'jupiter', component: JupiterComponent },
       { path: 'saturn', component: SaturnComponent },
-      { path: '', redirectTo: '/earth', pathMatch: 'full' }
+      { path: 'uranus', component: UranusComponent },
     ])
   ],
   providers: [],

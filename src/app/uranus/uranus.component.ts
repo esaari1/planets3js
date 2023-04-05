@@ -22,11 +22,11 @@ import ringsV from '../shaders/rings.vert';
 import ringsF from '../shaders/rings.frag';
 
 @Component({
-  selector: 'app-saturn',
-  templateUrl: './saturn.component.html',
-  styleUrls: ['./saturn.component.scss']
+  selector: 'uranus',
+  templateUrl: './uranus.component.html',
+  styleUrls: ['./uranus.component.scss']
 })
-export class SaturnComponent {
+export class UranusComponent {
 
   @ViewChild('canvas') canvas: ElementRef;
 
@@ -47,11 +47,11 @@ export class SaturnComponent {
   sky: THREE.Mesh;
   ringsTexture;
 
-  RINGS_INNER = 123.61;
-  RINGS_OUTER = 232.66;
+  RINGS_INNER = 203.7;
+  RINGS_OUTER = 262.3;
 
   ngOnInit() {
-    this.ringsTexture = new THREE.TextureLoader().load('./assets/images/saturn-rings.png');
+    this.ringsTexture = new THREE.TextureLoader().load('./assets/images/uranusring.png');
 
     this.surface = this.setupSurface();
     this.sky = this.setupSky();
@@ -62,7 +62,6 @@ export class SaturnComponent {
     const scene = new THREE.Scene();
     const camera = new THREE.PerspectiveCamera(70, window.innerWidth / window.innerHeight, 0.1, 1000);
     camera.position.set(0, 0, 350);
-    //camera.up.set(0, 0, 1);
 
     const renderer = new THREE.WebGLRenderer({
       antialias: true,
@@ -81,7 +80,7 @@ export class SaturnComponent {
     composer.addPass(new SMAAPass(scene, camera));
 
     scene.add(this.surface);
- //   scene.add(this.sky);
+    scene.add(this.sky);
     scene.add(this.rings);
 
     animate();
@@ -100,7 +99,7 @@ export class SaturnComponent {
   }
 
   setupSurface() {
-    const diffuse = new THREE.TextureLoader().load('./assets/images/2k_saturn.jpg');
+    const diffuse = new THREE.TextureLoader().load('./assets/images/uranusmap.jpg');
 
     const material = new THREE.ShaderMaterial({
       uniforms: {
@@ -147,11 +146,13 @@ export class SaturnComponent {
   setupRings() {
     const geometry = new THREE.RingGeometry(this.RINGS_INNER, this.RINGS_OUTER, 512);
 
+    const midRing = (this.RINGS_INNER + this.RINGS_OUTER) * 0.5;
+
     const pos = geometry.attributes.position;
     const v3 = new THREE.Vector3();
     for (let i = 0; i < pos.count; i++) {
       v3.fromBufferAttribute(pos, i);
-      geometry.attributes.uv.setXY(i, v3.length() < 200 ? 0 : 1, 1);
+      geometry.attributes.uv.setXY(i, v3.length() < midRing ? 1 : 0, 1);
     }
 
     const material = new THREE.ShaderMaterial({

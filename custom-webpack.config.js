@@ -8,6 +8,13 @@ module.exports = {
                     'raw-loader',
                     'glslify-loader'
                 ]
+            },
+            {
+                test: /\.json$/,
+                exclude: /node_modules/,
+                use: [
+                    'raw-loader'
+                ]
             }
         ]
     }
