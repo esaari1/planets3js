@@ -1,7 +1,10 @@
 import { Component, ElementRef, ViewChild } from '@angular/core';
 
 import * as THREE from 'three';
-import { OrbitControls } from '../OrbitControls.js';
+import { OrbitControls } from 'three/examples/jsm/controls/OrbitControls.js';
+import { EffectComposer } from 'three/examples/jsm/postprocessing/EffectComposer.js';
+import { RenderPass } from 'three/examples/jsm/postprocessing/RenderPass.js';
+import { SMAAPass } from 'three/examples/jsm/postprocessing/SMAAPass.js';
 
 import { setupUniforms } from '../constants';
 
@@ -9,6 +12,14 @@ import { setupUniforms } from '../constants';
 import rayleighV from '../shaders/rayleigh.vert';
 // @ts-ignore
 import rayleighF from '../shaders/rayleigh.frag';
+// @ts-ignore
+import saturnV from '../shaders/saturn.vert';
+// @ts-ignore
+import saturnF from '../shaders/saturn.frag';
+// @ts-ignore
+import ringsV from '../shaders/rings.vert';
+// @ts-ignore
+import ringsF from '../shaders/rings.frag';
 
 @Component({
   selector: 'app-saturn',
@@ -25,26 +36,30 @@ export class SaturnComponent {
     ESun: 20.0,
     g: -0.950,
     innerRadius: 100,
-    outerRadius: 101.5,
+    outerRadius: 100.5,
     wavelength: [0.650, 0.570, 0.475],
     scaleDepth: 0.25,
     mieScaleDepth: 0.1
   };
 
-  light: THREE.Vector3;
   surface: THREE.Mesh;
+  rings: THREE.Mesh;
   sky: THREE.Mesh;
+  ringsTexture;
 
   ngOnInit() {
-    this.light = this.setupLight();
+    this.ringsTexture = new THREE.TextureLoader().load('./assets/images/saturn-rings.png');
+
     this.surface = this.setupSurface();
     this.sky = this.setupSky();
+    this.rings = this.setupRings();
   }
 
   ngAfterViewInit() {
     const scene = new THREE.Scene();
     const camera = new THREE.PerspectiveCamera(70, window.innerWidth / window.innerHeight, 0.1, 1000);
     camera.position.set(0, 0, 350);
+    //camera.up.set(0, 0, 1);
 
     const renderer = new THREE.WebGLRenderer({
       antialias: true,
@@ -52,85 +67,59 @@ export class SaturnComponent {
     });
     renderer.setSize(window.innerWidth, window.innerHeight);
     renderer.setPixelRatio(window.devicePixelRatio);
-    renderer.shadowMap.enabled = true;
-    renderer.shadowMap.type = THREE.PCFSoftShadowMap;
-    renderer.shadowMap.size = new THREE.Vector2(1024, 1024);
 
     const controls = new OrbitControls(camera, renderer.domElement);
+    controls.enableDampling = true;
+    controls.dampingFactor = 5.0;
+    controls.zoomSpeed = 0.1;
 
-    scene.add(this.light);
+    const composer = new EffectComposer(renderer);
+    composer.addPass(new RenderPass(scene, camera));
+    composer.addPass(new SMAAPass(scene, camera));
+
     scene.add(this.surface);
-    //scene.add(this.sky);
-    //scene.add(this.setupRings());
-    const [mesh, mesh2] = this.setupRings();
-    scene.add(mesh);
-    scene.add(mesh2);
+    scene.add(this.sky);
+    scene.add(this.rings);
 
-    const helper = new THREE.CameraHelper(this.light.shadow.camera);
-    scene.add(helper);
-
-    const t = this;
     animate();
 
     function animate() {
       requestAnimationFrame(animate);
       controls.update();
-      renderer.render(scene, camera);
+      composer.render();
     }
   }
 
   updateLight(light: THREE.Vector3) {
-    //this.surface.material.uniforms.v3LightPosition.value = light;
     this.sky.material.uniforms.v3LightPosition.value = light;
-    // this.light.position.x = light.x;
-    // this.light.position.y = light.y;
-    // this.light.position.z = light.z;
-
-    this.light.shadow.camera.updateProjectionMatrix();
-  }
-
-  setupLight() {
-    const light = new THREE.DirectionalLight({
-      position: new THREE.Vector3(0, 200, 0)
-    });
-
-    light.castShadow = true;
-    light.position.x = 300;
-    light.position.y = -100;
-    light.shadow.camera.far = 1000;
-    light.shadow.camera.top = 300;
-    light.shadow.camera.bottom = -300;
-    light.shadow.camera.left = -300;
-    light.shadow.camera.right = 300;
-
-    return light;
+    this.surface.material.uniforms.lightDir.value = light;
+    this.rings.material.uniforms.lightDir.value = light;
   }
 
   setupSurface() {
     const diffuse = new THREE.TextureLoader().load('./assets/images/2k_saturn.jpg');
-    // const normalMap = new THREE.TextureLoader().load('./assets/images/Mars-normalmap_4k.jpg');
 
-    // const uniforms = setupUniforms(this.atmosphere);
-    // uniforms['tDiffuse'] = {
-    //   value: diffuse
-    // };
-    // uniforms['tNormalMap'] = {
-    //   value: normalMap
-    // };
-
-    // const material = new THREE.ShaderMaterial({
-    //   uniforms: uniforms,
-    //   vertexShader: mieV,
-    //   fragmentShader: mieF,
-    // });
-
-    const material = new THREE.MeshLambertMaterial({
-      map: diffuse
+    const material = new THREE.ShaderMaterial({
+      uniforms: {
+        tDiffuse: {
+          value: diffuse
+        },
+        ringsTexture: {
+          value: this.ringsTexture
+        },
+        lightDir: {
+          value: new THREE.Vector3(0, 1, 1)
+        },
+        ringsNormal: {
+          value: new THREE.Vector3(0, 1, 0)
+        }
+      },
+      vertexShader: saturnV,
+      fragmentShader: saturnF,
+      transparent: true
     });
 
     const surface = new THREE.Mesh(new THREE.SphereGeometry(100, 128, 64), material);
-    surface.castShadow = true;
-    surface.receiveShadow = true;
 
     return surface;
   }
@@ -149,8 +138,7 @@ export class SaturnComponent {
     return new THREE.Mesh(geometry, material);
   }
 
-  makeRing() {
-    const rings = new THREE.TextureLoader().load('./assets/images/saturn-rings.png');
+  setupRings() {
     const geometry = new THREE.RingGeometry(124, 233, 512);
 
     const pos = geometry.attributes.position;
@@ -160,36 +148,26 @@ export class SaturnComponent {
       geometry.attributes.uv.setXY(i, v3.length() < 200 ? 0 : 1, 1);
     }
 
-    const material = new THREE.MeshLambertMaterial({
-      map: rings,
+    const material = new THREE.ShaderMaterial({
+      uniforms: {
+        tDiffuse: {
+          value: this.ringsTexture
+        },
+        lightDir: {
+          value: new THREE.Vector3(0, 1, 1).normalize()
+        },
+        radius2: {
+          value: 100.0 * 100.0
+        }
+      },
+      vertexShader: ringsV,
+      fragmentShader: ringsF,
       transparent: true,
-      alphsMap: rings,
-      alphaTest: 0.5
+      side: THREE.DoubleSide
     });
 
     const mesh = new THREE.Mesh(geometry, material);
-    mesh.castShadow = true;
-    mesh.receiveShadow = true;
-
+    mesh.rotateX(-Math.PI / 2.0);
     return mesh;
-  }
-
-  setupRings() {
-
-    const mesh = this.makeRing();
-    const matrix = new THREE.Matrix4().makeRotationX(-Math.PI / 2.0);
-    mesh.applyMatrix4(matrix);
-
-    const mesh2 = this.makeRing();
-    const matrix2 = new THREE.Matrix4().makeRotationX(Math.PI / 2.0);
-    mesh2.applyMatrix4(matrix2);
-    const t = new THREE.Matrix4().makeTranslation(0, -3, 0);
-    mesh2.applyMatrix4(t);
-
-    // const group = new THREE.Group();
-    // group.add(mesh);
-    // group.add(mesh2);
-
-    return [mesh, mesh2];
   }
 }
