@@ -13,6 +13,8 @@ import rayleighF from '../shaders/rayleigh.frag';
 import mieV from '../shaders/mie.vert';
 // @ts-ignore
 import mieF from '../shaders/earth.frag';
+// @ts-ignore
+import earth from '../../assets/planets/earth.json';
 
 @Component({
   selector: 'earth',
@@ -22,18 +24,6 @@ import mieF from '../shaders/earth.frag';
 export class EarthComponent implements AfterViewInit {
 
   @ViewChild('canvas') canvas: ElementRef;
-
-  atmosphere = {
-    Kr: 0.0025,
-    Km: 0.0010,
-    ESun: 20.0,
-    g: -0.950,
-    innerRadius: 100,
-    outerRadius: 102.5,
-    wavelength: [0.650, 0.570, 0.475],
-    scaleDepth: 0.25,
-    mieScaleDepth: 0.1
-  };
 
   surface: THREE.Mesh;
   sky: THREE.Mesh;
@@ -82,7 +72,7 @@ export class EarthComponent implements AfterViewInit {
     const normalMap = new THREE.TextureLoader().load('./assets/images/earth-normal.jpg');
     const specularMap = new THREE.TextureLoader().load('./assets/images/Ocean_Mask.png');
 
-    const uniforms = setupUniforms(this.atmosphere);
+    const uniforms = setupUniforms(earth.atmosphere);
     uniforms['tDiffuse'] = {
       value: diffuse
     };
@@ -128,7 +118,7 @@ export class EarthComponent implements AfterViewInit {
     const material = new THREE.ShaderMaterial({
       vertexShader: rayleighV,
       fragmentShader: rayleighF,
-      uniforms: setupUniforms(this.atmosphere),
+      uniforms: setupUniforms(earth.atmosphere),
       side: THREE.BackSide,
       transparent: true
     });

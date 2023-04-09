@@ -20,6 +20,8 @@ import saturnF from '../shaders/saturn.frag';
 import ringsV from '../shaders/rings.vert';
 // @ts-ignore
 import ringsF from '../shaders/rings.frag';
+// @ts-ignore
+import saturn from '../../assets/planets/saturn.json';
 
 @Component({
   selector: 'app-saturn',
@@ -29,18 +31,6 @@ import ringsF from '../shaders/rings.frag';
 export class SaturnComponent {
 
   @ViewChild('canvas') canvas: ElementRef;
-
-  atmosphere = {
-    Kr: 0.0025,
-    Km: 0.0010,
-    ESun: 20.0,
-    g: -0.950,
-    innerRadius: 100,
-    outerRadius: 100.5,
-    wavelength: [0.650, 0.570, 0.475],
-    scaleDepth: 0.25,
-    mieScaleDepth: 0.1
-  };
 
   surface: THREE.Mesh;
   rings: THREE.Mesh;
@@ -81,7 +71,7 @@ export class SaturnComponent {
     composer.addPass(new SMAAPass(scene, camera));
 
     scene.add(this.surface);
- //   scene.add(this.sky);
+    //   scene.add(this.sky);
     scene.add(this.rings);
 
     animate();
@@ -100,7 +90,7 @@ export class SaturnComponent {
   }
 
   setupSurface() {
-    const diffuse = new THREE.TextureLoader().load('./assets/images/2k_saturn.jpg');
+    const diffuse = new THREE.TextureLoader().load(`./assets/images/${saturn.Texture}`);
 
     const material = new THREE.ShaderMaterial({
       uniforms: {
@@ -131,12 +121,12 @@ export class SaturnComponent {
   }
 
   setupSky() {
-    const geometry = new THREE.SphereGeometry(this.atmosphere.outerRadius, 500, 500);
+    const geometry = new THREE.SphereGeometry(saturn.atmosphere.outerRadius, 500, 500);
 
     const material = new THREE.ShaderMaterial({
       vertexShader: rayleighV,
       fragmentShader: rayleighF,
-      uniforms: setupUniforms(this.atmosphere),
+      uniforms: setupUniforms(saturn.atmosphere),
       side: THREE.BackSide,
       transparent: true
     });

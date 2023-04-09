@@ -6,5 +6,6 @@
     "SemiMajorAxis": 30.109570,
     "Inclination": 1.770646,
     "AscendingNode": 131.670599,
-    "Radius": 24764.0
+    "Radius": 24764.0,
+    "Texture": "neptunemap.jpg"
 }

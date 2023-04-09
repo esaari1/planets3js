@@ -13,6 +13,8 @@ import rayleighF from '../shaders/rayleigh.frag';
 import mieV from '../shaders/mie.vert';
 // @ts-ignore
 import mieF from '../shaders/mie.frag';
+// @ts-ignore
+import mars from '../../assets/planets/mars.json';
 
 @Component({
   selector: 'mars',
@@ -22,18 +24,6 @@ import mieF from '../shaders/mie.frag';
 export class MarsComponent {
 
   @ViewChild('canvas') canvas: ElementRef;
-
-  atmosphere = {
-    Kr: 0.0025,
-    Km: 0.0010,
-    ESun: 20.0,
-    g: -0.950,
-    innerRadius: 100,
-    outerRadius: 101,
-    wavelength: [0.41, 0.45, 0.5],
-    scaleDepth: 0.25,
-    mieScaleDepth: 0.1
-  };
 
   surface: THREE.Mesh;
   sky: THREE.Mesh;
@@ -76,10 +66,10 @@ export class MarsComponent {
   }
 
   setupSurface() {
-    const diffuse = new THREE.TextureLoader().load('./assets/images/Mars_4k.jpg');
+    const diffuse = new THREE.TextureLoader().load(`./assets/images/${mars.Texture}`);
     const normalMap = new THREE.TextureLoader().load('./assets/images/Mars-normalmap_4k.jpg');
 
-    const uniforms = setupUniforms(this.atmosphere);
+    const uniforms = setupUniforms(mars.atmosphere);
     uniforms['tDiffuse'] = {
       value: diffuse
     };
@@ -105,7 +95,7 @@ export class MarsComponent {
     const material = new THREE.ShaderMaterial({
       vertexShader: rayleighV,
       fragmentShader: rayleighF,
-      uniforms: setupUniforms(this.atmosphere),
+      uniforms: setupUniforms(mars.atmosphere),
       side: THREE.BackSide,
       transparent: true
     });

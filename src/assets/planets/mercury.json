@@ -6,5 +6,6 @@
     "SemiMajorAxis": 0.387099,
     "Inclination": 7.004540,
     "AscendingNode": 48.212740,
-    "Radius": 2439.7
+    "Radius": 2439.7,
+    "Texture": "mercury.jpg"
 }

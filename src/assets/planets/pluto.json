@@ -6,5 +6,6 @@
     "SemiMajorAxis": 39.3414,
     "Inclination": 17.1420,
     "AscendingNode": 110.144,
-    "Radius": 1151.0
+    "Radius": 1151.0,
+    "Texture": "plutomap2k.jpg"
 }

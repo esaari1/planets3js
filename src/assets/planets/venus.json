@@ -6,5 +6,6 @@
     "SemiMajorAxis": 0.723332,
     "Inclination": 3.394535,
     "AscendingNode": 76.589820,
-    "Radius": 6051.8
+    "Radius": 6051.8,
+    "Texture": "venus_cloud.jpg"
 }
