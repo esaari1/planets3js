@@ -1,9 +1,7 @@
 varying vec3 viewVec;
 varying vec3 tnorm;
 varying vec3 vPosition;
-varying vec3 vNormal;
 
-uniform vec3 color;
 uniform float time;
 
 //
@@ -179,16 +177,11 @@ float fresnel2(vec3 eye, vec3 n) {
 
 
 void main() {
-   // float alpha = abs(dot(viewVec, tnorm));
-   // alpha = pow(alpha, 0.2);
-   // vec3 c = mix(color, vec3(1.0, 1.0, 0.8), alpha);
-   // gl_FragColor = vec4(c, 1.0);
    float brightness = brightness(vPosition);
    brightness = brightness * 2.0 + 1.0;
 
-   float f = fresnel2(normalize(viewVec), normalize(tnorm));
+   float f = fresnel(normalize(viewVec), normalize(tnorm));
    brightness += f;
 
    gl_FragColor = vec4(brightnessToColor(brightness), 1.0);
-   //gl_FragColor = vec4(f);
 }
