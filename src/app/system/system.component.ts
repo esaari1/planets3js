@@ -27,15 +27,16 @@ import sunGlowV from '../shaders/sunGlow.vert';
 // @ts-ignore
 import sunGlowF from '../shaders/sunGlow.frag';
 
-import * as moment from 'moment';
+import moment from 'moment-es6';
 import * as THREE from 'three';
 
+import { OrbitControls } from 'three/examples/jsm/controls/OrbitControls.js';
 import { EffectComposer } from 'three/examples/jsm/postprocessing/EffectComposer.js';
 import { RenderPass } from 'three/examples/jsm/postprocessing/RenderPass.js';
 import { SMAAPass } from 'three/examples/jsm/postprocessing/SMAAPass.js';
-import { OrbitControls } from 'three/examples/jsm/controls/OrbitControls.js';
 
-import { AU_TO_KM, DEG_TO_RAD, RAD_TO_DEG, TROPICAL_YEAR, epsilon } from '../constants';
+import { TROPICAL_YEAR } from '../constants';
+import { calculateLocation } from './orbit';
 
 @Component({
   selector: 'system',
@@ -51,6 +52,8 @@ export class SystemComponent implements AfterViewInit {
 
   pointer = new THREE.Vector2();
   sunMesh;
+  selectables = [];
+  selectedObject = undefined;
 
   ngOnInit() {
     window.addEventListener('pointermove', this.onPointerMove.bind(this));
@@ -58,10 +61,13 @@ export class SystemComponent implements AfterViewInit {
   }
 
   ngAfterViewInit() {
+    this.drawInnerSystem();
+  }
+
+  drawInnerSystem() {
     const scene = new THREE.Scene();
     const camera = new THREE.PerspectiveCamera(30, window.innerWidth / window.innerHeight, 0.1, 100000);
-    //camera.position.set(0, 4000, 7000);
-    camera.position.set(0, 100, 200);
+    camera.position.set(0, 0, 200);
 
     const renderer = new THREE.WebGLRenderer({
       antialias: true,
@@ -101,26 +107,29 @@ export class SystemComponent implements AfterViewInit {
       raycaster.setFromCamera(t.pointer, camera);
       const intersects = raycaster.intersectObjects(scene.children);
 
-      // scene.children.forEach(c => {
-      //   if (c.material) {
-      //     c.material.color.setRGB(1, 1, 1);
-      //   }
-      //   c.children.forEach(c2 => {
-      //     c2.material.color.setRGB(1, 1, 1);
-      //   })
-      // })
-
-      // if (intersects.length > 0) {
-      //   intersects.forEach(i => {
-      //     i.object.material.color.setRGB(0.3, 0.7, 0.8);
-      //   });
-      // }
+      if (intersects.length > 0) {
+        intersects.forEach(i => {
+          if (t.selectables.indexOf(i.object.uuid) >= 0) {
+            if (t.selectedObject !== undefined && t.selectedObject.uuid !== i.object.uuid) {
+              t.selectedObject.material.color.setRGB(1, 1, 1);
+              t.selectedObject = undefined;
+            }
+            i.object.material.color.setRGB(0.3, 0.7, 0.8);
+            t.selectedObject = i.object;
+          }
+        });
+      } else {
+        if (t.selectedObject !== undefined) {
+          t.selectedObject.material.color.setRGB(1, 1, 1);
+          t.selectedObject = undefined;
+        }
+      }
 
       requestAnimationFrame(animate);
       controls.update();
       composer.render();
 
-      time += 0.0001;
+      time += 0.0005;
     }
   }
 
@@ -132,20 +141,15 @@ export class SystemComponent implements AfterViewInit {
   }
 
   onClick(event) {
-    console.log('CLICK');
+    console.log(this.selectedObject);
   }
 
   sun() {
-    const sphere = new THREE.SphereGeometry(695500.0 * this.scale * 20, 50, 50);
-    //const material = new THREE.MeshBasicMaterial({ color: 0xE5CC99 });
+    const sphere = new THREE.SphereGeometry(695500.0 * this.scale * 25, 50, 50);
     const material = new THREE.ShaderMaterial({
       vertexShader: sunV,
       fragmentShader: sunF,
       uniforms: {
-        color: {
-          //value: [0.8, 0.7, 0.2]
-          value: [0.8, 0.25, 0.15]
-        },
         time: {
           value: 1
         }
@@ -155,18 +159,13 @@ export class SystemComponent implements AfterViewInit {
     const sun = new THREE.Mesh(sphere, material);
     this.sunMesh = sun;
 
-    const glow = new THREE.SphereGeometry(695500.0 * this.scale * 30, 50, 50);
+    const glow = new THREE.SphereGeometry(695500.0 * this.scale * 35, 50, 50);
     const glowMat = new THREE.ShaderMaterial({
       vertexShader: sunGlowV,
       fragmentShader: sunGlowF,
-      blending: THREE.AdditiveBlending,
+      //blending: THREE.AdditiveBlending,
       side: THREE.BackSide,
-      transparent: true,
-      uniforms: {
-        color: {
-          value: [0.9, 0.9, 0.8]
-        }
-      }
+      transparent: true
     });
     const glowMesh = new THREE.Mesh(glow, glowMat);
 
@@ -187,14 +186,14 @@ export class SystemComponent implements AfterViewInit {
     const colors = [];
 
     const numPoints = orbit.Period * TROPICAL_YEAR;
-    const colorPoints = numPoints * 1.5;
+    const colorPoints = numPoints * 2;
 
     const epoch = moment([1990, 0, 1]);
     const now = moment(new Date());
     let day = now.diff(epoch, 'days');
 
     for (let i = 0; i < numPoints; i++) {
-      const curr = this.calculateLocation(day, orbit);
+      const curr = calculateLocation(day, orbit, this.scale);
       vertices.push(curr.x, curr.y, curr.z);
 
       const r = Math.min((colorPoints - i) / colorPoints + 0.2, 1.0);
@@ -232,73 +231,8 @@ export class SystemComponent implements AfterViewInit {
     const group = new THREE.Group();
     group.add(mesh);
     group.add(planet);
+    this.selectables.push(planet.uuid);
 
     return group;
-  }
-
-  calculateLocation(days: number, orbit) {
-    // Calculate the mean anomaly
-    const M = (360.0 / TROPICAL_YEAR) * (days / orbit.Period) + orbit.LongAtEpoch - orbit.LongOfPerihelion;
-
-    // Find solution for Kepler's Law
-    const E = this.kepler(M, orbit.eccentricity);
-
-    // Find tan(v/2)
-    const tanV = Math.pow(((1.0 + orbit.Eccentricity) / (1.0 - orbit.Eccentricity)), 0.5) * Math.tan(E / 2.0);
-
-    // Take inverse tangent and multiply by 2 to get v. Convert from radians to degrees.
-    const v = Math.atan(tanV) * 2.0 * RAD_TO_DEG;
-
-    // Calculate heleocentric longitude
-    let l = v + orbit.LongOfPerihelion;
-    l = this.adjustBearing(l);
-
-    // Calculate length of radius vector
-    const r = (orbit.SemiMajorAxis * (1.0 - Math.pow(orbit.Eccentricity, 2.0))) / (1.0 + orbit.Eccentricity * Math.cos(v * DEG_TO_RAD));
-
-    // Calculate the heleocentric latitude
-    let latitude = Math.asin(Math.sin((l - orbit.AscendingNode) * DEG_TO_RAD) * Math.sin(orbit.Inclination * DEG_TO_RAD));
-    latitude = latitude * RAD_TO_DEG;
-
-    // Calculate projected heleocentric longitude
-    const x = Math.cos((l - orbit.AscendingNode) * DEG_TO_RAD);
-    const y = Math.sin((l - orbit.AscendingNode) * DEG_TO_RAD) * Math.cos(orbit.Inclination * DEG_TO_RAD);
-    let longitude = Math.atan2(y, x);
-    longitude = longitude * RAD_TO_DEG + orbit.AscendingNode;
-    longitude = this.adjustBearing(longitude);
-
-    // Calculate length of projected radius vector
-    let radius = r * Math.cos(latitude * DEG_TO_RAD);
-    radius = radius * AU_TO_KM * this.scale;
-
-    latitude = latitude * DEG_TO_RAD;
-    longitude = longitude * DEG_TO_RAD;
-    const cosLat = Math.cos(latitude);
-    return new THREE.Vector3(cosLat * Math.cos(longitude) * radius, Math.sin(latitude) * radius, -cosLat * Math.sin(longitude) * radius);
-  }
-
-  kepler(M: number, eccentricity: number): number {
-    M = this.adjustBearing(M);
-    M = M * DEG_TO_RAD;
-    let E = M;
-    let g = E - (eccentricity * Math.sin(E)) - M;
-
-    while (g > epsilon) {
-      const deltaE = g / (1.0 - eccentricity * Math.cos(E));
-      E = E - deltaE;
-      g = E - (eccentricity * Math.sin(E)) - M;
-    }
-    return E;
-  }
-
-  adjustBearing(b: number): number {
-    while (b < 0) {
-      b += 360.0;
-    }
-    while (b > 360.0) {
-      b -= 360.0;
-    }
-
-    return b;
   }
 }
