@@ -35,6 +35,9 @@
             "styles": [
               "src/styles.scss"
             ],
+            "allowedCommonJsDependencies": [
+              "moment-es6"
+            ],
             "scripts": []
           },
           "configurations": {
