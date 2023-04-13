@@ -11,6 +11,7 @@ void main() {
    alpha = pow(alpha, 2.0);
 
    float br = 1.0 + alpha * 0.8;
-   gl_FragColor.rgb = brightnessToColor(br) ;
-   gl_FragColor.a = alpha;
+   gl_FragColor.rgb = brightnessToColor(br) * alpha;
+   //gl_FragColor.a = alpha;
+   gl_FragColor.a = 1.0;
 }

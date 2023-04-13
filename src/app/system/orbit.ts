@@ -1,7 +1,7 @@
 import { AU_TO_KM, DEG_TO_RAD, RAD_TO_DEG, TROPICAL_YEAR, epsilon } from "../constants";
 import * as THREE from 'three';
 
-export function calculateLocation(days: number, orbit, scale) {
+export function calculateLocation(days: number, orbit) {
     // Calculate the mean anomaly
     const M = (360.0 / TROPICAL_YEAR) * (days / orbit.Period) + orbit.LongAtEpoch - orbit.LongOfPerihelion;
 
@@ -34,7 +34,7 @@ export function calculateLocation(days: number, orbit, scale) {
 
     // Calculate length of projected radius vector
     let radius = r * Math.cos(latitude * DEG_TO_RAD);
-    radius = radius * AU_TO_KM * scale;
+    radius = radius * AU_TO_KM;
 
     latitude = latitude * DEG_TO_RAD;
     longitude = longitude * DEG_TO_RAD;

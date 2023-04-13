@@ -62,9 +62,6 @@ export class SaturnComponent {
     renderer.setPixelRatio(window.devicePixelRatio);
 
     const controls = new OrbitControls(camera, renderer.domElement);
-    // controls.enableDampling = true;
-    // controls.dampingFactor = 5.0;
-    // controls.zoomSpeed = 0.1;
 
     const composer = new EffectComposer(renderer);
     composer.addPass(new RenderPass(scene, camera));

@@ -1,0 +1,220 @@
+{
+    "config": {
+        "orbitScale": 0.000001,
+        "planetScale": {
+            "fromLow": 1151,
+            "fromHigh": 71492.1,
+            "toLow": 5,
+            "toHigh": 100
+        }
+    },
+    "planets": [
+        {
+            "Name": "Mercury",
+            "Period": 0.240852,
+            "LongAtEpoch": 60.750646,
+            "LongOfPerihelion": 77.299833,
+            "Eccentricity": 0.205633,
+            "SemiMajorAxis": 0.387099,
+            "Inclination": 7.004540,
+            "AscendingNode": 48.212740,
+            "Radius": 2439.7,
+            "Texture": "mercury.jpg"
+        },
+        {
+            "Name": "Venus",
+            "Period": 0.615211,
+            "LongAtEpoch": 88.455855,
+            "LongOfPerihelion": 131.430236,
+            "Eccentricity": 0.006778,
+            "SemiMajorAxis": 0.723332,
+            "Inclination": 3.394535,
+            "AscendingNode": 76.589820,
+            "Radius": 6051.8,
+            "Texture": "venus_cloud.jpg"
+        },
+        {
+            "Name": "Earth",
+            "config": {
+                "orbitScale": 0.0002,
+                "planetScale": {
+                    "fromLow": 1151,
+                    "fromHigh": 71492.1,
+                    "toLow": 5,
+                    "toHigh": 100
+                }
+            },
+            "Period": 1.00004,
+            "LongAtEpoch": 99.403308,
+            "LongOfPerihelion": 102.768413,
+            "Eccentricity": 0.016713,
+            "SemiMajorAxis": 1.0,
+            "Inclination": 0.0,
+            "AscendingNode": 0.0,
+            "Radius": 6378.14,
+            "Texture": "8081_earthmap4k.jpg",
+            "atmosphere": {
+                "Kr": 0.0025,
+                "Km": 0.0010,
+                "ESun": 20.0,
+                "g": -0.950,
+                "innerRadius": 100,
+                "outerRadius": 102.5,
+                "wavelength": [
+                    0.650,
+                    0.570,
+                    0.475
+                ],
+                "scaleDepth": 0.25,
+                "mieScaleDepth": 0.1
+            },
+            "moons": [
+                {
+                    "name": "Luna",
+                    "Period": 27.321661,
+                    "Radius": 1737.53,
+                    "SemiMajorAxis": 0.00257003846,
+                    "Eccentricity": 0.054900,
+                    "Inclination": 5.15,
+                    "LongAtEpoch": 180.0,
+                    "LongOfPerihelion": 0.0,
+                    "AscendingNode": 0.0,
+                    "Texture": "8081_earthmap4k.jpg"
+                }
+            ]
+        },
+        {
+            "Name": "Mars",
+            "Period": 1.880932,
+            "LongAtEpoch": 240.739474,
+            "LongOfPerihelion": 335.874939,
+            "Eccentricity": 0.093396,
+            "SemiMajorAxis": 1.523688,
+            "Inclination": 1.849736,
+            "AscendingNode": 49.480308,
+            "Radius": 3376.2,
+            "Texture": "Mars_4k.jpg",
+            "atmosphere": {
+                "Kr": 0.0025,
+                "Km": 0.0010,
+                "ESun": 20.0,
+                "g": -0.950,
+                "innerRadius": 100,
+                "outerRadius": 101,
+                "wavelength": [
+                    0.41,
+                    0.45,
+                    0.5
+                ],
+                "scaleDepth": 0.25,
+                "mieScaleDepth": 0.1
+            }
+        },
+        {
+            "Period": 11.863075,
+            "LongAtEpoch": 90.638185,
+            "LongOfPerihelion": 14.170747,
+            "Eccentricity": 0.048482,
+            "SemiMajorAxis": 5.202561,
+            "Inclination": 1.303613,
+            "AscendingNode": 100.353142,
+            "Radius": 71492.1,
+            "Texture": "jupiter2_4k.jpg",
+            "atmosphere": {
+                "Kr": 0.0025,
+                "Km": 0.0010,
+                "ESun": 20.0,
+                "g": -0.950,
+                "innerRadius": 100,
+                "outerRadius": 101,
+                "wavelength": [
+                    0.650,
+                    0.570,
+                    0.475
+                ],
+                "scaleDepth": 0.25,
+                "mieScaleDepth": 0.1
+            }
+        },
+        {
+            "Period": 29.471362,
+            "LongAtEpoch": 287.690033,
+            "LongOfPerihelion": 92.861407,
+            "Eccentricity": 0.055581,
+            "SemiMajorAxis": 9.554747,
+            "Inclination": 2.488980,
+            "AscendingNode": 113.576139,
+            "Radius": 60268.0,
+            "Texture": "2k_saturn.jpg",
+            "Tilt": -26.73,
+            "Rings": {
+                "Inner": 74500.0,
+                "Outer": 140220.0,
+                "Texture": "saturn-rings.png"
+            },
+            "atmosphere": {
+                "Kr": 0.0025,
+                "Km": 0.0010,
+                "ESun": 20.0,
+                "g": -0.950,
+                "innerRadius": 100,
+                "outerRadius": 100.5,
+                "wavelength": [
+                    0.650,
+                    0.570,
+                    0.475
+                ],
+                "scaleDepth": 0.25,
+                "mieScaleDepth": 0.1
+            }
+        },
+        {
+            "Period": 84.039492,
+            "LongAtEpoch": 271.063148,
+            "LongOfPerihelion": 172.884833,
+            "Eccentricity": 0.046321,
+            "SemiMajorAxis": 19.21814,
+            "Inclination": 0.773059,
+            "AscendingNode": 73.926961,
+            "Radius": 25559.0,
+            "Texture": "uranusmap.jpg",
+            "atmosphere": {
+                "Kr": 0.0025,
+                "Km": 0.0010,
+                "ESun": 20.0,
+                "g": -0.950,
+                "innerRadius": 100,
+                "outerRadius": 100.5,
+                "wavelength": [
+                    0.650,
+                    0.570,
+                    0.475
+                ],
+                "scaleDepth": 0.25,
+                "mieScaleDepth": 0.1
+            }
+        },
+        {
+            "Period": 164.79246,
+            "LongAtEpoch": 282.349556,
+            "LongOfPerihelion": 48.009758,
+            "Eccentricity": 0.009003,
+            "SemiMajorAxis": 30.109570,
+            "Inclination": 1.770646,
+            "AscendingNode": 131.670599,
+            "Radius": 24764.0,
+            "Texture": "neptunemap.jpg"
+        },
+        {
+            "Period": 246.77027,
+            "LongAtEpoch": 221.4127,
+            "LongOfPerihelion": 224.133,
+            "Eccentricity": 0.24624,
+            "SemiMajorAxis": 39.3414,
+            "Inclination": 17.1420,
+            "AscendingNode": 110.144,
+            "Radius": 1151.0,
+            "Texture": "plutomap2k.jpg"
+        }
+    ]
+}

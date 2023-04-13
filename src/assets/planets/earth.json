@@ -22,5 +22,20 @@
         ],
         "scaleDepth": 0.25,
         "mieScaleDepth": 0.1
-    }
+    },
+    "moons": [
+        {
+            "name": "Luna",
+            "Period": 27.321661,
+            "Radius": 1737.53,
+            "SemiMajorAxis": 0.00257003846,
+            "Eccentricity": 0.054900,
+            "Inclination": 5.15,
+
+            "LongAtEpoch": 180.0,
+            "LongOfPerihelion": 0.0,
+            "AscendingNode": 0.0,
+            "Texture": "8081_earthmap4k.jpg"
+        }
+    ]
 }

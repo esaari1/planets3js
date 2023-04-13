@@ -1,23 +1,7 @@
 import { AfterViewInit, Component, ElementRef, ViewChild } from '@angular/core';
 
 // @ts-ignore
-import mercury from '../../assets/planets/mercury.json';
-// @ts-ignore
-import venus from '../../assets/planets/venus.json';
-// @ts-ignore
-import earth from '../../assets/planets/earth.json';
-// @ts-ignore
-import mars from '../../assets/planets/mars.json';
-// @ts-ignore
-import jupiter from '../../assets/planets/jupiter.json';
-// @ts-ignore
-import saturn from '../../assets/planets/saturn.json';
-// @ts-ignore
-import uranus from '../../assets/planets/uranus.json';
-// @ts-ignore
-import neptune from '../../assets/planets/neptune.json';
-// @ts-ignore
-import pluto from '../../assets/planets/pluto.json';
+import system from '../../assets/planets/system.json';
 // @ts-ignore
 import sunV from '../shaders/sun.vert';
 // @ts-ignore
@@ -35,7 +19,7 @@ import { EffectComposer } from 'three/examples/jsm/postprocessing/EffectComposer
 import { RenderPass } from 'three/examples/jsm/postprocessing/RenderPass.js';
 import { SMAAPass } from 'three/examples/jsm/postprocessing/SMAAPass.js';
 
-import { TROPICAL_YEAR } from '../constants';
+import { DEG_TO_RAD, TROPICAL_YEAR } from '../constants';
 import { calculateLocation } from './orbit';
 
 @Component({
@@ -47,28 +31,29 @@ export class SystemComponent implements AfterViewInit {
 
   @ViewChild('canvas') canvas: ElementRef;
 
-  scale = 0.000001;
-  planetScale = 0.0015;
+  scene: THREE.Scene;
+  camera: THREE.Camera;
+  controls: OrbitControls;
+  composer: EffectComposer;
+  raycaster: THREE.Raycaster;
 
   pointer = new THREE.Vector2();
   sunMesh;
   selectables = [];
   selectedObject = undefined;
+  time = 0.0;
 
   ngOnInit() {
     window.addEventListener('pointermove', this.onPointerMove.bind(this));
     window.addEventListener('click', this.onClick.bind(this));
+
+    this.scene = new THREE.Scene();
+    this.camera = new THREE.PerspectiveCamera(30, window.innerWidth / window.innerHeight, 10, 100000);
+
+    this.raycaster = new THREE.Raycaster();
   }
 
   ngAfterViewInit() {
-    this.drawInnerSystem();
-  }
-
-  drawInnerSystem() {
-    const scene = new THREE.Scene();
-    const camera = new THREE.PerspectiveCamera(30, window.innerWidth / window.innerHeight, 0.1, 100000);
-    camera.position.set(0, 0, 200);
-
     const renderer = new THREE.WebGLRenderer({
       antialias: true,
       canvas: this.canvas.nativeElement
@@ -76,61 +61,88 @@ export class SystemComponent implements AfterViewInit {
     renderer.setSize(window.innerWidth, window.innerHeight);
     renderer.setPixelRatio(window.devicePixelRatio);
 
-    scene.add(this.path(mercury));
-    scene.add(this.path(venus));
-    scene.add(this.path(earth));
-    scene.add(this.path(mars));
-    scene.add(this.path(jupiter));
-    scene.add(this.path(saturn));
-    scene.add(this.path(uranus));
-    scene.add(this.path(neptune));
-    scene.add(this.path(pluto));
-    scene.add(this.sun());
+    this.controls = new OrbitControls(this.camera, renderer.domElement);
+    this.composer = new EffectComposer(renderer);
+    this.composer.addPass(new RenderPass(this.scene, this.camera));
+    this.composer.addPass(new SMAAPass(this.scene, this.camera));
 
-    const controls = new OrbitControls(camera, renderer.domElement);
-    const composer = new EffectComposer(renderer);
-    composer.addPass(new RenderPass(scene, camera));
-    composer.addPass(new SMAAPass(scene, camera));
+    //this.drawInnerSystem();
+    this.drawSubsystem(system.planets[2]);
+  }
 
-    const raycaster = new THREE.Raycaster();
-    const t = this;
+  drawInnerSystem() {
+    this.camera.position.set(0, 200, 500);
 
-    const light = new THREE.PointLight(0xffffff, 1, 0);
-    scene.add(light);
+    system.planets.forEach(planet => this.createPlanet(planet, system.config.orbitScale, system.config.planetScale));
+    this.createSun();
 
-    let time = 0.0;
+    // Lights
+    this.scene.add(new THREE.PointLight(0xffffff, 1, 0));
+    this.scene.add(new THREE.AmbientLight(0x303030));
 
-    animate();
+    this.animate(this.updateSystem);
+  }
 
-    function animate() {
-      t.sunMesh.material.uniforms.time.value = time;
-      raycaster.setFromCamera(t.pointer, camera);
-      const intersects = raycaster.intersectObjects(scene.children);
+  updateSystem = () => {
+    this.sunMesh.material.uniforms.time.value = this.time;
+  }
 
-      if (intersects.length > 0) {
-        intersects.forEach(i => {
-          if (t.selectables.indexOf(i.object.uuid) >= 0) {
-            if (t.selectedObject !== undefined && t.selectedObject.uuid !== i.object.uuid) {
-              t.selectedObject.material.color.setRGB(1, 1, 1);
-              t.selectedObject = undefined;
-            }
-            i.object.material.color.setRGB(0.3, 0.7, 0.8);
-            t.selectedObject = i.object;
-          }
-        });
-      } else {
-        if (t.selectedObject !== undefined) {
-          t.selectedObject.material.color.setRGB(1, 1, 1);
-          t.selectedObject = undefined;
-        }
-      }
+  drawSubsystem(subsystem) {
+    this.camera.position.set(0, 100, 220);
+    this.createPlanet(subsystem, subsystem.config.orbitScale, subsystem.config.planetScale, true);
 
-      requestAnimationFrame(animate);
-      controls.update();
-      composer.render();
+    subsystem.moons.forEach(moon => {
+      this.createPlanet(moon, subsystem.config.orbitScale, subsystem.config.planetScale);
+    });
 
-      time += 0.0005;
+    const epoch = moment([1990, 0, 1]);
+    const now = moment(new Date());
+    let day = now.diff(epoch, 'days');
+
+    const curr = calculateLocation(day, subsystem);
+
+    const light = new THREE.DirectionalLight();
+    light.position.x = -curr.x;
+    light.position.y = -curr.y;
+    light.position.z = -curr.z;
+    this.scene.add(light);
+
+    this.scene.add(new THREE.AmbientLight(0x303030));
+
+    this.animate(null);
+  }
+
+  animate(updateCallback) {
+    if (updateCallback) {
+      updateCallback();
     }
+
+    this.raycaster.setFromCamera(this.pointer, this.camera);
+    const intersects = this.raycaster.intersectObjects(this.scene.children);
+
+    if (intersects.length > 0) {
+      intersects.forEach(i => {
+        if (this.selectables.indexOf(i.object.uuid) >= 0) {
+          if (this.selectedObject !== undefined && this.selectedObject.uuid !== i.object.uuid) {
+            this.selectedObject.material.color.setRGB(1, 1, 1);
+            this.selectedObject = undefined;
+          }
+          i.object.material.color.setRGB(0.3, 0.7, 0.8);
+          this.selectedObject = i.object;
+        }
+      });
+    } else {
+      if (this.selectedObject !== undefined) {
+        this.selectedObject.material.color.setRGB(1, 1, 1);
+        this.selectedObject = undefined;
+      }
+    }
+
+    requestAnimationFrame(this.animate.bind(this, updateCallback));
+    this.controls.update();
+    this.composer.render();
+
+    this.time += 0.00025;
   }
 
   onPointerMove(event) {
@@ -144,8 +156,8 @@ export class SystemComponent implements AfterViewInit {
     console.log(this.selectedObject);
   }
 
-  sun() {
-    const sphere = new THREE.SphereGeometry(695500.0 * this.scale * 25, 50, 50);
+  createSun() {
+    const sphere = new THREE.SphereGeometry(this.scalePlanet(695500.0, system.config.planetScale) * 0.02, 50, 50);
     const material = new THREE.ShaderMaterial({
       vertexShader: sunV,
       fragmentShader: sunF,
@@ -159,13 +171,13 @@ export class SystemComponent implements AfterViewInit {
     const sun = new THREE.Mesh(sphere, material);
     this.sunMesh = sun;
 
-    const glow = new THREE.SphereGeometry(695500.0 * this.scale * 35, 50, 50);
+    const glow = new THREE.SphereGeometry(this.scalePlanet(695500.0, system.config.planetScale) * 0.027, 50, 50);
     const glowMat = new THREE.ShaderMaterial({
       vertexShader: sunGlowV,
       fragmentShader: sunGlowF,
-      //blending: THREE.AdditiveBlending,
+      blending: THREE.AdditiveBlending,
       side: THREE.BackSide,
-      transparent: true
+      //transparent: true
     });
     const glowMesh = new THREE.Mesh(glow, glowMat);
 
@@ -173,10 +185,11 @@ export class SystemComponent implements AfterViewInit {
     group.add(sun);
     group.add(glowMesh);
 
-    return group;
+    this.scene.add(group);
   }
 
-  path(orbit) {
+  createOrbit(config, scale) {
+    // Line material
     const material = new THREE.LineBasicMaterial({
       vertexColors: true,
       linewidth: 40,
@@ -185,20 +198,19 @@ export class SystemComponent implements AfterViewInit {
     const vertices = [];
     const colors = [];
 
-    const numPoints = orbit.Period * TROPICAL_YEAR;
-    const colorPoints = numPoints * 2;
+    const numPoints = config.Period * TROPICAL_YEAR;
 
     const epoch = moment([1990, 0, 1]);
     const now = moment(new Date());
     let day = now.diff(epoch, 'days');
 
+    // Creste points and colors
     for (let i = 0; i < numPoints; i++) {
-      const curr = calculateLocation(day, orbit, this.scale);
+      const curr = this.scaleOrbit(calculateLocation(day, config), scale);
       vertices.push(curr.x, curr.y, curr.z);
 
-      const r = Math.min((colorPoints - i) / colorPoints + 0.2, 1.0);
-      const g = Math.min((colorPoints - i) / colorPoints + 0.1, 1.0);
-      colors.push(r, g, 1.0);
+      const v = i / numPoints + 0.15;
+      colors.push(v * .75, v * .7, v);
       day++;
     }
 
@@ -209,30 +221,96 @@ export class SystemComponent implements AfterViewInit {
     const geometry = new THREE.BufferGeometry();
     geometry.setAttribute('position', new THREE.Float32BufferAttribute(vertices, 3));
     geometry.setAttribute('color', new THREE.Float32BufferAttribute(colors, 3));
-    const mesh = new THREE.Line(geometry, material);
 
-    const map = new THREE.TextureLoader().load(`./assets/images/${orbit.Texture}`);
+    this.scene.add(new THREE.Line(geometry, material));
+  }
+
+  scalePlanet(s, config) {
+    return config.toLow + ((s - config.fromLow) * (config.toHigh - config.toLow) / (config.fromHigh - config.fromLow));
+  }
+
+  scaleOrbit(s: THREE.Vector3, scalar): THREE.Vector3 {
+    return s.multiplyScalar(scalar);
+    //return s.multiplyScalar(0.0002);
+  }
+
+  createPlanet(config, orbitScale, planetScale, isTopLevel: boolean = false) {
+    const epoch = moment([1990, 0, 1]);
+    const now = moment(new Date());
+    let day = now.diff(epoch, 'days');
 
     // Planet
-    const radius = orbit.Radius * this.planetScale;
+    const radius = this.scalePlanet(config.Radius, planetScale);
     const sphere = new THREE.SphereGeometry(radius, 50, 50);
-    const material2 = new THREE.MeshStandardMaterial({ map: map });
+    const material2 = new THREE.MeshStandardMaterial({
+      map: new THREE.TextureLoader().load(`./assets/images/${config.Texture}`)
+    });
+
     const planet = new THREE.Mesh(sphere, material2);
-    planet.position.set(vertices[0], vertices[1], vertices[2]);
-    planet.renderOrder = 1;
 
     let secs = now.get('hours') * 3600;
     secs += now.get('seconds') * 60;
     secs += now.get('seconds');
 
     const p = secs / (24 * 3600);
-    planet.rotateY(-p * Math.PI * 2);
+    //planet.rotateY(-p * Math.PI * 2);
 
     const group = new THREE.Group();
-    group.add(mesh);
     group.add(planet);
     this.selectables.push(planet.uuid);
 
-    return group;
+    if (config.Rings) {
+      group.add(this.createRings(config));
+    }
+
+    if (config.Tilt) {
+      group.rotateX(config.Tilt * DEG_TO_RAD);
+    }
+
+    this.scene.add(group);
+
+    if (!isTopLevel) {
+      const curr = this.scaleOrbit(calculateLocation(day, config), orbitScale);
+      group.position.set(curr.x, curr.y, curr.z);
+      this.createOrbit(config, orbitScale);
+    }
+  }
+
+  createRings(config) {
+    const innerR = this.scalePlanet(config.Rings.Inner, system.config.planetScale);
+    const outerR = this.scalePlanet(config.Rings.Outer, system.config.planetScale);
+    const centerR = (innerR + outerR) / 2;
+    const geometry = new THREE.RingGeometry(innerR, outerR, 512);
+
+    const pos = geometry.attributes.position;
+    const v3 = new THREE.Vector3();
+    for (let i = 0; i < pos.count; i++) {
+      v3.fromBufferAttribute(pos, i);
+      geometry.attributes.uv.setXY(i, v3.length() < centerR ? 0 : 1, 1);
+    }
+
+    const material = new THREE.MeshStandardMaterial({
+      map: new THREE.TextureLoader().load(`./assets/images/${config.Rings.Texture}`),
+      // uniforms: {
+      //   tDiffuse: {
+      //     value: new THREE.TextureLoader().load(`./assets/images/${config.Rings.Texture}`)
+      //   },
+      //   lightDir: {
+      //     value: new THREE.Vector3(0, 0, 0).normalize()
+      //   },
+      //   radius2: {
+      //     value: config.Radius * config.Radius
+      //   }
+      // },
+      // vertexShader: ringsV,
+      // fragmentShader: ringsF,
+      transparent: true,
+      side: THREE.DoubleSide
+    });
+
+    const mesh = new THREE.Mesh(geometry, material);
+    mesh.rotateX(-Math.PI / 2.0);
+
+    return mesh;
   }
 }
