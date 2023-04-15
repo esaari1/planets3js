@@ -3,7 +3,7 @@ import { Component, ElementRef, ViewChild } from '@angular/core';
 import * as THREE from 'three';
 import { OrbitControls } from 'three/examples/jsm/controls/OrbitControls.js';
 
-import { setupUniforms } from '../constants';
+import { atmosphereUniforms } from '../constants';
 
 // @ts-ignore
 import rayleighV from '../shaders/rayleigh.vert';
@@ -79,7 +79,7 @@ export class JupiterComponent {
     const diffuse = new THREE.TextureLoader().load('./assets/images/jupiter2_4k.jpg');
     // const normalMap = new THREE.TextureLoader().load('./assets/images/Mars-normalmap_4k.jpg');
 
-    // const uniforms = setupUniforms(this.atmosphere);
+    // const uniforms = atmosphereUniforms(this.atmosphere);
     // uniforms['tDiffuse'] = {
     //   value: diffuse
     // };
@@ -108,7 +108,7 @@ export class JupiterComponent {
     const material = new THREE.ShaderMaterial({
       vertexShader: rayleighV,
       fragmentShader: rayleighF,
-      uniforms: setupUniforms(jupiter.atmosphere),
+      uniforms: atmosphereUniforms(jupiter.atmosphere),
       side: THREE.BackSide,
       transparent: true
     });

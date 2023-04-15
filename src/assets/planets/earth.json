@@ -13,8 +13,7 @@
         "Km": 0.0010,
         "ESun": 20.0,
         "g": -0.950,
-        "innerRadius": 100,
-        "outerRadius": 102.5,
+        "multiplier": 1.025,
         "wavelength": [
             0.650,
             0.570,

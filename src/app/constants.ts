@@ -14,7 +14,7 @@ export const EPOCH_YEAR = 1990;
 
 export const epsilon = 0.000001;
 
-export function setupUniforms(atmosphere) {
+export function atmosphereUniforms(atmosphere) {
     const uniforms = {
         v3LightPosition: {
             type: "v3",
@@ -24,10 +24,6 @@ export function setupUniforms(atmosphere) {
             type: "v3",
             value: new THREE.Vector3(1 / Math.pow(atmosphere.wavelength[0], 4), 1 / Math.pow(atmosphere.wavelength[1], 4), 1 / Math.pow(atmosphere.wavelength[2], 4))
         },
-        fCameraHeight: {
-            type: "f",
-            value: 190
-        },
         fCameraHeight2: {
             type: "f",
             value: 190 * 190
@@ -35,10 +31,6 @@ export function setupUniforms(atmosphere) {
         fInnerRadius: {
             type: "f",
             value: atmosphere.innerRadius
-        },
-        fInnerRadius2: {
-            type: "f",
-            value: atmosphere.innerRadius * atmosphere.innerRadius
         },
         fOuterRadius: {
             type: "f",

@@ -1,6 +1,6 @@
 import { Component, ElementRef, ViewChild } from '@angular/core';
 
-import { setupUniforms } from '../constants';
+import { atmosphereUniforms } from '../constants';
 
 import * as THREE from 'three';
 import { OrbitControls } from 'three/examples/jsm/controls/OrbitControls.js';
@@ -69,7 +69,7 @@ export class MarsComponent {
     const diffuse = new THREE.TextureLoader().load(`./assets/images/${mars.Texture}`);
     const normalMap = new THREE.TextureLoader().load('./assets/images/Mars-normalmap_4k.jpg');
 
-    const uniforms = setupUniforms(mars.atmosphere);
+    const uniforms = atmosphereUniforms(mars.atmosphere);
     uniforms['tDiffuse'] = {
       value: diffuse
     };
@@ -95,7 +95,7 @@ export class MarsComponent {
     const material = new THREE.ShaderMaterial({
       vertexShader: rayleighV,
       fragmentShader: rayleighF,
-      uniforms: setupUniforms(mars.atmosphere),
+      uniforms: atmosphereUniforms(mars.atmosphere),
       side: THREE.BackSide,
       transparent: true
     });

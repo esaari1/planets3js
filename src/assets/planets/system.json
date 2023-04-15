@@ -58,8 +58,7 @@
                 "Km": 0.0010,
                 "ESun": 20.0,
                 "g": -0.950,
-                "innerRadius": 100,
-                "outerRadius": 102.5,
+                "multiplier": 1.025,
                 "wavelength": [
                     0.650,
                     0.570,
@@ -79,7 +78,7 @@
                     "LongAtEpoch": 180.0,
                     "LongOfPerihelion": 0.0,
                     "AscendingNode": 0.0,
-                    "Texture": "8081_earthmap4k.jpg"
+                    "Texture": "MoonDiffuse.jpg"
                 }
             ]
         },
@@ -93,24 +92,10 @@
             "Inclination": 1.849736,
             "AscendingNode": 49.480308,
             "Radius": 3376.2,
-            "Texture": "Mars_4k.jpg",
-            "atmosphere": {
-                "Kr": 0.0025,
-                "Km": 0.0010,
-                "ESun": 20.0,
-                "g": -0.950,
-                "innerRadius": 100,
-                "outerRadius": 101,
-                "wavelength": [
-                    0.41,
-                    0.45,
-                    0.5
-                ],
-                "scaleDepth": 0.25,
-                "mieScaleDepth": 0.1
-            }
+            "Texture": "Mars_4k.jpg"
         },
         {
+            "Name": "Jupiter",
             "Period": 11.863075,
             "LongAtEpoch": 90.638185,
             "LongOfPerihelion": 14.170747,
@@ -119,24 +104,10 @@
             "Inclination": 1.303613,
             "AscendingNode": 100.353142,
             "Radius": 71492.1,
-            "Texture": "jupiter2_4k.jpg",
-            "atmosphere": {
-                "Kr": 0.0025,
-                "Km": 0.0010,
-                "ESun": 20.0,
-                "g": -0.950,
-                "innerRadius": 100,
-                "outerRadius": 101,
-                "wavelength": [
-                    0.650,
-                    0.570,
-                    0.475
-                ],
-                "scaleDepth": 0.25,
-                "mieScaleDepth": 0.1
-            }
+            "Texture": "jupiter2_4k.jpg"
         },
         {
+            "Name": "Saturn",
             "Period": 29.471362,
             "LongAtEpoch": 287.690033,
             "LongOfPerihelion": 92.861407,
@@ -151,24 +122,10 @@
                 "Inner": 74500.0,
                 "Outer": 140220.0,
                 "Texture": "saturn-rings.png"
-            },
-            "atmosphere": {
-                "Kr": 0.0025,
-                "Km": 0.0010,
-                "ESun": 20.0,
-                "g": -0.950,
-                "innerRadius": 100,
-                "outerRadius": 100.5,
-                "wavelength": [
-                    0.650,
-                    0.570,
-                    0.475
-                ],
-                "scaleDepth": 0.25,
-                "mieScaleDepth": 0.1
             }
         },
         {
+            "Name": "Uranus",
             "Period": 84.039492,
             "LongAtEpoch": 271.063148,
             "LongOfPerihelion": 172.884833,
@@ -177,24 +134,10 @@
             "Inclination": 0.773059,
             "AscendingNode": 73.926961,
             "Radius": 25559.0,
-            "Texture": "uranusmap.jpg",
-            "atmosphere": {
-                "Kr": 0.0025,
-                "Km": 0.0010,
-                "ESun": 20.0,
-                "g": -0.950,
-                "innerRadius": 100,
-                "outerRadius": 100.5,
-                "wavelength": [
-                    0.650,
-                    0.570,
-                    0.475
-                ],
-                "scaleDepth": 0.25,
-                "mieScaleDepth": 0.1
-            }
+            "Texture": "uranusmap.jpg"
         },
         {
+            "Name": "Neptune",
             "Period": 164.79246,
             "LongAtEpoch": 282.349556,
             "LongOfPerihelion": 48.009758,
@@ -206,6 +149,7 @@
             "Texture": "neptunemap.jpg"
         },
         {
+            "Name": "Pluto",
             "Period": 246.77027,
             "LongAtEpoch": 221.4127,
             "LongOfPerihelion": 224.133,

@@ -3,7 +3,7 @@ import { AfterViewInit, Component, ElementRef, ViewChild } from '@angular/core';
 import * as THREE from 'three';
 import { OrbitControls } from 'three/examples/jsm/controls/OrbitControls.js';
 
-import { setupUniforms } from '../constants';
+import { atmosphereUniforms } from '../constants';
 
 // @ts-ignore
 import rayleighV from '../shaders/rayleigh.vert';
@@ -29,6 +29,8 @@ export class EarthComponent implements AfterViewInit {
   sky: THREE.Mesh;
 
   ngOnInit() {
+    earth.atmosphere.innerRadius = 100;
+    earth.atmosphere.outerRadius = 100 * earth.atmosphere.multiplier;
     this.surface = this.setupSurface();
     this.sky = this.setupSky();
   }
@@ -51,9 +53,13 @@ export class EarthComponent implements AfterViewInit {
     scene.add(this.surface);
     scene.add(this.sky);
 
+    const t = this;
     animate();
 
     function animate() {
+      t.surface.material.uniforms.fCameraHeight2.value = camera.position.distanceToSquared(t.surface.position);
+      t.sky.material.uniforms.fCameraHeight2.value = camera.position.distanceToSquared(t.surface.position);
+
       requestAnimationFrame(animate);
       controls.update();
       renderer.render(scene, camera);
@@ -72,7 +78,7 @@ export class EarthComponent implements AfterViewInit {
     const normalMap = new THREE.TextureLoader().load('./assets/images/earth-normal.jpg');
     const specularMap = new THREE.TextureLoader().load('./assets/images/Ocean_Mask.png');
 
-    const uniforms = setupUniforms(earth.atmosphere);
+    const uniforms = atmosphereUniforms(earth.atmosphere);
     uniforms['tDiffuse'] = {
       value: diffuse
     };
@@ -118,7 +124,7 @@ export class EarthComponent implements AfterViewInit {
     const material = new THREE.ShaderMaterial({
       vertexShader: rayleighV,
       fragmentShader: rayleighF,
-      uniforms: setupUniforms(earth.atmosphere),
+      uniforms: atmosphereUniforms(earth.atmosphere),
       side: THREE.BackSide,
       transparent: true
     });

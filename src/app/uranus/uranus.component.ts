@@ -6,7 +6,7 @@ import { EffectComposer } from 'three/examples/jsm/postprocessing/EffectComposer
 import { RenderPass } from 'three/examples/jsm/postprocessing/RenderPass.js';
 import { SMAAPass } from 'three/examples/jsm/postprocessing/SMAAPass.js';
 
-import { setupUniforms } from '../constants';
+import { atmosphereUniforms } from '../constants';
 
 // @ts-ignore
 import rayleighV from '../shaders/rayleigh.vert';
@@ -125,7 +125,7 @@ export class UranusComponent {
     const material = new THREE.ShaderMaterial({
       vertexShader: rayleighV,
       fragmentShader: rayleighF,
-      uniforms: setupUniforms(uranus.atmosphere),
+      uniforms: atmosphereUniforms(uranus.atmosphere),
       side: THREE.BackSide,
       transparent: true
     });

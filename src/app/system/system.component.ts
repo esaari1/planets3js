@@ -10,6 +10,14 @@ import sunF from '../shaders/sun.frag';
 import sunGlowV from '../shaders/sunGlow.vert';
 // @ts-ignore
 import sunGlowF from '../shaders/sunGlow.frag';
+// @ts-ignore
+import rayleighV from '../shaders/rayleigh.vert';
+// @ts-ignore
+import rayleighF from '../shaders/rayleigh.frag';
+// @ts-ignore
+import mieV from '../shaders/mie.vert';
+// @ts-ignore
+import mieF from '../shaders/mie.frag';
 
 import moment from 'moment-es6';
 import * as THREE from 'three';
@@ -19,8 +27,9 @@ import { EffectComposer } from 'three/examples/jsm/postprocessing/EffectComposer
 import { RenderPass } from 'three/examples/jsm/postprocessing/RenderPass.js';
 import { SMAAPass } from 'three/examples/jsm/postprocessing/SMAAPass.js';
 
-import { DEG_TO_RAD, TROPICAL_YEAR } from '../constants';
+import { DEG_TO_RAD, TROPICAL_YEAR, atmosphereUniforms } from '../constants';
 import { calculateLocation } from './orbit';
+import { Atmosphere, isUpdateable } from '../models/models';
 
 @Component({
   selector: 'system',
@@ -48,7 +57,7 @@ export class SystemComponent implements AfterViewInit {
     window.addEventListener('click', this.onClick.bind(this));
 
     this.scene = new THREE.Scene();
-    this.camera = new THREE.PerspectiveCamera(30, window.innerWidth / window.innerHeight, 10, 100000);
+    this.camera = new THREE.PerspectiveCamera(30, window.innerWidth / window.innerHeight, 10, 10000);
 
     this.raycaster = new THREE.Raycaster();
   }
@@ -66,8 +75,8 @@ export class SystemComponent implements AfterViewInit {
     this.composer.addPass(new RenderPass(this.scene, this.camera));
     this.composer.addPass(new SMAAPass(this.scene, this.camera));
 
-    //this.drawInnerSystem();
-    this.drawSubsystem(system.planets[2]);
+    this.drawInnerSystem();
+    //this.drawSubsystem(system.planets[2]);
   }
 
   drawInnerSystem() {
@@ -80,7 +89,7 @@ export class SystemComponent implements AfterViewInit {
     this.scene.add(new THREE.PointLight(0xffffff, 1, 0));
     this.scene.add(new THREE.AmbientLight(0x303030));
 
-    this.animate(this.updateSystem);
+    this.animate();
   }
 
   updateSystem = () => {
@@ -89,33 +98,38 @@ export class SystemComponent implements AfterViewInit {
 
   drawSubsystem(subsystem) {
     this.camera.position.set(0, 100, 220);
-    this.createPlanet(subsystem, subsystem.config.orbitScale, subsystem.config.planetScale, true);
-
-    subsystem.moons.forEach(moon => {
-      this.createPlanet(moon, subsystem.config.orbitScale, subsystem.config.planetScale);
-    });
 
     const epoch = moment([1990, 0, 1]);
     const now = moment(new Date());
     let day = now.diff(epoch, 'days');
 
-    const curr = calculateLocation(day, subsystem);
+    const curr = calculateLocation(day, subsystem).multiplyScalar(-1).normalize();
+
+    this.createPlanet(subsystem, subsystem.config.orbitScale, subsystem.config.planetScale, curr, true);
+
+    subsystem.moons.forEach(moon => {
+      this.createPlanet(moon, subsystem.config.orbitScale, subsystem.config.planetScale);
+    });
 
     const light = new THREE.DirectionalLight();
-    light.position.x = -curr.x;
-    light.position.y = -curr.y;
-    light.position.z = -curr.z;
+    light.position.x = curr.x;
+    light.position.y = curr.y;
+    light.position.z = curr.z;
     this.scene.add(light);
 
     this.scene.add(new THREE.AmbientLight(0x303030));
 
-    this.animate(null);
+    this.animate();
   }
 
-  animate(updateCallback) {
-    if (updateCallback) {
-      updateCallback();
+  callback(e) {
+    if (isUpdateable(e)) {
+      e.update(this.camera.position, this.time);
     }
+  }
+
+  animate() {
+    this.scene.traverse(this.callback.bind(this));
 
     this.raycaster.setFromCamera(this.pointer, this.camera);
     const intersects = this.raycaster.intersectObjects(this.scene.children);
@@ -138,7 +152,7 @@ export class SystemComponent implements AfterViewInit {
       }
     }
 
-    requestAnimationFrame(this.animate.bind(this, updateCallback));
+    requestAnimationFrame(this.animate.bind(this));
     this.controls.update();
     this.composer.render();
 
@@ -153,7 +167,7 @@ export class SystemComponent implements AfterViewInit {
   }
 
   onClick(event) {
-    console.log(this.selectedObject);
+    //console.log(this.selectedObject);
   }
 
   createSun() {
@@ -234,19 +248,44 @@ export class SystemComponent implements AfterViewInit {
     //return s.multiplyScalar(0.0002);
   }
 
-  createPlanet(config, orbitScale, planetScale, isTopLevel: boolean = false) {
+  createPlanet(config, orbitScale, planetScale, lightDir = null, isTopLevel: boolean = false) {
     const epoch = moment([1990, 0, 1]);
-    const now = moment(new Date());
+    const now = moment();
     let day = now.diff(epoch, 'days');
 
     // Planet
     const radius = this.scalePlanet(config.Radius, planetScale);
     const sphere = new THREE.SphereGeometry(radius, 50, 50);
-    const material2 = new THREE.MeshStandardMaterial({
-      map: new THREE.TextureLoader().load(`./assets/images/${config.Texture}`)
-    });
 
-    const planet = new THREE.Mesh(sphere, material2);
+    let planet = undefined;
+    let material = undefined;
+
+    if (config.atmosphere) {
+      config.atmosphere.innerRadius = radius;
+      config.atmosphere.outerRadius = radius * config.atmosphere.multiplier;
+
+      const uniforms = atmosphereUniforms(config.atmosphere);
+      uniforms['tDiffuse'] = {
+        value: new THREE.TextureLoader().load(`./assets/images/${config.Texture}`)
+      };
+      uniforms['tNormalMap'] = {
+        value: new THREE.TextureLoader().load('./assets/images/earth-normal.jpg')
+      };
+
+      material = new THREE.ShaderMaterial({
+        uniforms: uniforms,
+        vertexShader: mieV,
+        fragmentShader: mieF,
+      });
+      planet = new Atmosphere(sphere, material, this.camera.position);
+    } else {
+      material = new THREE.MeshStandardMaterial({
+        map: new THREE.TextureLoader().load(`./assets/images/${config.Texture}`)
+      });
+      planet = new THREE.Mesh(sphere, material);
+    }
+
+    planet.geometry.computeTangents();
 
     let secs = now.get('hours') * 3600;
     secs += now.get('seconds') * 60;
@@ -259,8 +298,19 @@ export class SystemComponent implements AfterViewInit {
     group.add(planet);
     this.selectables.push(planet.uuid);
 
+    const location = calculateLocation(day, config);
+
     if (config.Rings) {
       group.add(this.createRings(config));
+    }
+
+    if (config.atmosphere) {
+      if (lightDir == null) {
+        lightDir = location.multiplyScalar(-1).normalize();
+      }
+
+      planet.material.uniforms.v3LightPosition.value = lightDir;
+      group.add(this.createAtmosphere(config.atmosphere, lightDir));
     }
 
     if (config.Tilt) {
@@ -312,5 +362,22 @@ export class SystemComponent implements AfterViewInit {
     mesh.rotateX(-Math.PI / 2.0);
 
     return mesh;
+  }
+
+  createAtmosphere(atmosphere, lightDir) {
+    const geometry = new THREE.SphereGeometry(atmosphere.outerRadius, 500, 500);
+
+    const uniforms = atmosphereUniforms(atmosphere);
+    uniforms.v3LightPosition.value = lightDir;
+
+    const material = new THREE.ShaderMaterial({
+      vertexShader: rayleighV,
+      fragmentShader: rayleighF,
+      uniforms: uniforms,
+      side: THREE.BackSide,
+      transparent: true
+    });
+
+    return new Atmosphere(geometry, material, this.camera.position);
   }
 }
