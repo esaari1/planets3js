@@ -29,7 +29,7 @@ import { SMAAPass } from 'three/examples/jsm/postprocessing/SMAAPass.js';
 
 import { DEG_TO_RAD, TROPICAL_YEAR, atmosphereUniforms } from '../constants';
 import { calculateLocation } from './orbit';
-import { Atmosphere, isUpdateable } from '../models/models';
+import { AnimatedMaterial, Atmosphere, isUpdateable } from '../models/models';
 
 @Component({
   selector: 'system',
@@ -47,7 +47,6 @@ export class SystemComponent implements AfterViewInit {
   raycaster: THREE.Raycaster;
 
   pointer = new THREE.Vector2();
-  sunMesh;
   selectables = [];
   selectedObject = undefined;
   time = 0.0;
@@ -90,10 +89,6 @@ export class SystemComponent implements AfterViewInit {
     this.scene.add(new THREE.AmbientLight(0x303030));
 
     this.animate();
-  }
-
-  updateSystem = () => {
-    this.sunMesh.material.uniforms.time.value = this.time;
   }
 
   drawSubsystem(subsystem) {
@@ -182,8 +177,7 @@ export class SystemComponent implements AfterViewInit {
       },
       transparent: true
     });
-    const sun = new THREE.Mesh(sphere, material);
-    this.sunMesh = sun;
+    const sun = new AnimatedMaterial(sphere, material);
 
     const glow = new THREE.SphereGeometry(this.scalePlanet(695500.0, system.config.planetScale) * 0.027, 50, 50);
     const glowMat = new THREE.ShaderMaterial({

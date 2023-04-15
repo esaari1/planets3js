@@ -19,3 +19,14 @@ export class Atmosphere extends THREE.Mesh implements Updateable {
         this['material'].uniforms.fCameraHeight2.value = cameraPos.distanceToSquared(this['position']);
     }
 }
+
+export class AnimatedMaterial extends THREE.Mesh implements Updateable {
+
+    constructor(geometry = new THREE.BufferGeometry(), material = new THREE.MeshBasicMaterial()) {
+        super(geometry, material);
+    }
+
+    update(cameraPos: THREE.Vector3, time: number) {
+        this['material'].uniforms.time.value = time;
+    }
+}
