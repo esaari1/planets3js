@@ -29,7 +29,7 @@ import { SMAAPass } from 'three/examples/jsm/postprocessing/SMAAPass.js';
 
 import { DEG_TO_RAD, TROPICAL_YEAR, atmosphereUniforms } from '../constants';
 import { calculateLocation } from './orbit';
-import { AnimatedMaterial, Atmosphere, isUpdateable } from '../models/models';
+import { AnimatedMaterial, Atmosphere, isUpdateable } from '../models/updateable';
 
 @Component({
   selector: 'system',
@@ -117,14 +117,16 @@ export class SystemComponent implements AfterViewInit {
     this.animate();
   }
 
-  callback(e) {
+  // Called for each object in the scene during animation loop.
+  // Check if object implements Updateable interface and calls update if it does.
+  animateCallback(e) {
     if (isUpdateable(e)) {
       e.update(this.camera.position, this.time);
     }
   }
 
   animate() {
-    this.scene.traverse(this.callback.bind(this));
+    this.scene.traverse(this.animateCallback.bind(this));
 
     this.raycaster.setFromCamera(this.pointer, this.camera);
     const intersects = this.raycaster.intersectObjects(this.scene.children);
