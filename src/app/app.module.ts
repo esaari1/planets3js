@@ -10,6 +10,7 @@ import { JupiterComponent } from './jupiter/jupiter.component';
 import { SaturnComponent } from './saturn/saturn.component';
 import { UranusComponent } from './uranus/uranus.component';
 import { SystemComponent } from './system/system.component';
+import { Test1Component } from './test1/test1.component';
 
 @NgModule({
   declarations: [
@@ -20,7 +21,8 @@ import { SystemComponent } from './system/system.component';
     JupiterComponent,
     SaturnComponent,
     UranusComponent,
-    SystemComponent
+    SystemComponent,
+    Test1Component
   ],
   imports: [
     BrowserModule,
@@ -31,6 +33,7 @@ import { SystemComponent } from './system/system.component';
       { path: 'jupiter', component: JupiterComponent },
       { path: 'saturn', component: SaturnComponent },
       { path: 'uranus', component: UranusComponent },
+      { path: 'test1', component: Test1Component }
     ])
   ],
   providers: [],
