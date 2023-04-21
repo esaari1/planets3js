@@ -256,7 +256,7 @@ export class SystemComponent implements AfterViewInit {
     let planet = undefined;
     let material = undefined;
 
-    if (config.atmosphere) {
+    if (config.atmosphere && isTopLevel) {
       config.atmosphere.innerRadius = radius;
       config.atmosphere.outerRadius = radius * config.atmosphere.multiplier;
 
@@ -300,7 +300,7 @@ export class SystemComponent implements AfterViewInit {
       group.add(this.createRings(config));
     }
 
-    if (config.atmosphere) {
+    if (config.atmosphere && isTopLevel) {
       if (lightDir == null) {
         lightDir = location.multiplyScalar(-1).normalize();
       }

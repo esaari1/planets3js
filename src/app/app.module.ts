@@ -11,6 +11,7 @@ import { SaturnComponent } from './saturn/saturn.component';
 import { UranusComponent } from './uranus/uranus.component';
 import { SystemComponent } from './system/system.component';
 import { Test1Component } from './test1/test1.component';
+import { LandscapeComponent } from './landscape/landscape.component';
 
 @NgModule({
   declarations: [
@@ -22,7 +23,8 @@ import { Test1Component } from './test1/test1.component';
     SaturnComponent,
     UranusComponent,
     SystemComponent,
-    Test1Component
+    Test1Component,
+    LandscapeComponent
   ],
   imports: [
     BrowserModule,
@@ -33,7 +35,8 @@ import { Test1Component } from './test1/test1.component';
       { path: 'jupiter', component: JupiterComponent },
       { path: 'saturn', component: SaturnComponent },
       { path: 'uranus', component: UranusComponent },
-      { path: 'test1', component: Test1Component }
+      { path: 'test1', component: Test1Component },
+      { path: 'landscape', component: LandscapeComponent }
     ])
   ],
   providers: [],
