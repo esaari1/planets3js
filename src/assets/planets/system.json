@@ -8,6 +8,13 @@
             "toHigh": 100
         }
     },
+    "sun": {
+        "LongAtEpoch": 279.403303,
+        "LongOfPerigee": 282.768422,
+        "Eccentricity": 0.016713,
+        "SemiMajorAxis": 1.495985,
+        "AngularDiameter": 0.533128
+    },
     "planets": [
         {
             "Name": "Mercury",
@@ -70,12 +77,16 @@
             "moons": [
                 {
                     "name": "Luna",
+                    "LongOffset": 13.1763966,
+                    "LongAtEpoch": 318.351648,
+                    "LongOfPerigee": 36.340410,
+                    "LongOfNode": 318.510107,
+                    "Inclination": 5.145396,
+
                     "Period": 27.321661,
                     "Radius": 1737.53,
                     "SemiMajorAxis": 0.00257003846,
                     "Eccentricity": 0.054900,
-                    "Inclination": 5.15,
-                    "LongAtEpoch": 180.0,
                     "LongOfPerihelion": 0.0,
                     "AscendingNode": 0.0,
                     "Texture": "MoonDiffuse.jpg"

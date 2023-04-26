@@ -1,7 +1,8 @@
-import { AU_TO_KM, DEG_TO_RAD, RAD_TO_DEG, TROPICAL_YEAR, epsilon } from "../constants";
+import { AU_TO_KM, DAYS_TO_DEG, DEG_TO_RAD, RAD_TO_DEG, TROPICAL_YEAR, epsilon } from "../constants";
 import * as THREE from 'three';
+import { daysSinceEpoch } from "../util/time";
 
-export function calculateLocation(days: number, orbit) {
+export function planetOrbit(days: number, orbit) {
     // Calculate the mean anomaly
     const M = (360.0 / TROPICAL_YEAR) * (days / orbit.Period) + orbit.LongAtEpoch - orbit.LongOfPerihelion;
 
@@ -42,6 +43,76 @@ export function calculateLocation(days: number, orbit) {
     return new THREE.Vector3(cosLat * Math.cos(longitude) * radius, Math.sin(latitude) * radius, -cosLat * Math.sin(longitude) * radius);
 }
 
+export function sunPosition(config, days: number = undefined) {
+    if (days === undefined) {
+        days = daysSinceEpoch();
+    }
+
+    const N = adjustBearing(days * DAYS_TO_DEG);
+
+    const M = adjustBearing(N + config.LongAtEpoch - config.LongOfPerigee);
+
+    const Ec = 360.0 / Math.PI * config.Eccentricity * Math.sin(M * DEG_TO_RAD);
+
+    // Geocentric ecliptic longitude
+    const longitude = adjustBearing(N + Ec + config.LongAtEpoch);
+
+    return eclipticToEquitorial(longitude, 0);
+}
+
+export function moonOrbit(sunConfig, moonConfig, days: number = undefined) {
+    const Ns = adjustBearing(days * DAYS_TO_DEG);
+    const Ms = adjustBearing(Ns + sunConfig.LongAtEpoch - sunConfig.LongOfPerigee);
+
+    const Ec = 360.0 / Math.PI * sunConfig.Eccentricity * Math.sin(Ms * DEG_TO_RAD);
+
+    // sun longitude
+    const longitudeSun = adjustBearing(Ns + Ec + sunConfig.LongAtEpoch);
+
+    // mean longitude
+    const l = adjustBearing(moonConfig.LongOffset * days + moonConfig.LongAtEpoch);
+
+    // mean anomoly
+    const Mm = adjustBearing(l - 0.1114041 * days - moonConfig.LongOfPerigee);
+
+    // ascending node mean longitude
+    const N = adjustBearing(moonConfig.LongOfNode - 0.0529539 * days);
+
+    // evection correction
+    const C = l - longitudeSun;
+    const Ev = 1.2739 * Math.sin((2 * C - Mm) * DEG_TO_RAD);
+
+    // annual equation and third correction
+    const sinMs = Math.sin(Ms * DEG_TO_RAD);
+    const Ae = 0.1858 * sinMs;
+    const A3 = 0.37 * sinMs;
+
+    const Mm2 = Mm + Ev - Ae - A3;
+
+    // equation center and fourth corrections
+    const Ec2 = 6.2886 * Math.sin(Mm2 * DEG_TO_RAD);
+    const A4 = 0.214 * Math.sin(2 * Mm2 * DEG_TO_RAD);
+
+    // corrected longitude
+    let l2 = l + Ev + Ec2 - Ae + A4;
+
+    // variation
+    const V = 0.6583 * Math.sin(2 * (l2 - longitudeSun) * DEG_TO_RAD);
+    l2 += V;
+
+    const N2 = N - 0.16 * Math.sin(Ms * DEG_TO_RAD);
+
+    const sl2n2 = Math.sin((l2 - N2) * DEG_TO_RAD)
+    const y = sl2n2 * Math.cos(moonConfig.Inclination * DEG_TO_RAD);
+    const x = Math.cos((l2 - N2) * DEG_TO_RAD);
+
+    const atan = normalizedArctan(y, x);
+    const longitude = adjustBearing(N2 + atan);
+    const latitude = Math.asin(sl2n2 * Math.sin(moonConfig.Inclination * DEG_TO_RAD)) * RAD_TO_DEG;
+
+    return eclipticToEquitorial(longitude, latitude);
+}
+
 function kepler(M: number, eccentricity: number): number {
     M = adjustBearing(M);
     M = M * DEG_TO_RAD;
@@ -65,4 +136,66 @@ function adjustBearing(b: number): number {
     }
 
     return b;
+}
+
+export function eclipticToEquitorial(longitude: number, latitude: number) {
+    const epsilon = 23.441884 * DEG_TO_RAD;
+    const cosEpsilon = Math.cos(epsilon);
+    const sinEpsilon = Math.sin(epsilon);
+
+    const longRadians = longitude * DEG_TO_RAD;
+    const latRadians = latitude * DEG_TO_RAD;
+
+    const sinDeclination = Math.sin(latRadians) * cosEpsilon + Math.cos(latRadians) * sinEpsilon * Math.sin(longRadians);
+    const declination = Math.asin(sinDeclination) * RAD_TO_DEG;
+
+    const y = Math.sin(longRadians) * cosEpsilon - Math.tan(latRadians) * sinEpsilon;
+    const x = Math.cos(longRadians);
+
+    let rightAscension = normalizedArctan(y, x);
+
+    // Convert to hours
+    rightAscension /= 15.0;
+
+    return new THREE.Vector2(rightAscension, declination);
+}
+
+function normalizedArctan(y: number, x: number): number {
+    let val = Math.atan2(y, x) * RAD_TO_DEG;
+
+    if (x >= 0) {
+        if (y >= 0) {
+            while (val < 0) {
+                val += 180;
+            }
+            while (val > 90) {
+                val -= 180;
+            }
+        } else {
+            while (val < 270) {
+                val += 180;
+            }
+            while (val > 360) {
+                val -= 180;
+            }
+        }
+    } else {
+        if (y >= 0) {
+            while (val < 90) {
+                val += 180;
+            }
+            while (val > 180) {
+                val -= 180;
+            }
+        } else {
+            while (val < 180) {
+                val += 180;
+            }
+            while (val > 270) {
+                val -= 180;
+            }
+        }
+    }
+
+    return val;
 }

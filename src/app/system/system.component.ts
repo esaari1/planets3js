@@ -19,7 +19,6 @@ import mieV from '../shaders/mie.vert';
 // @ts-ignore
 import mieF from '../shaders/mie.frag';
 
-import moment from 'moment-es6';
 import * as THREE from 'three';
 
 import { OrbitControls } from 'three/examples/jsm/controls/OrbitControls.js';
@@ -28,8 +27,9 @@ import { RenderPass } from 'three/examples/jsm/postprocessing/RenderPass.js';
 import { SMAAPass } from 'three/examples/jsm/postprocessing/SMAAPass.js';
 
 import { DEG_TO_RAD, TROPICAL_YEAR, atmosphereUniforms } from '../constants';
-import { calculateLocation } from './orbit';
 import { AnimatedMaterial, Atmosphere, isUpdateable } from '../models/updateable';
+import { daysSinceEpoch, timeSinceEpoch } from '../util/time';
+import { moonOrbit, planetOrbit } from './orbit';
 
 @Component({
   selector: 'system',
@@ -46,19 +46,24 @@ export class SystemComponent implements AfterViewInit {
   composer: EffectComposer;
   raycaster: THREE.Raycaster;
 
-  pointer = new THREE.Vector2();
   selectables = [];
   selectedObject = undefined;
   time = 0.0;
+
+  currentSystem = -1;
 
   ngOnInit() {
     window.addEventListener('pointermove', this.onPointerMove.bind(this));
     window.addEventListener('click', this.onClick.bind(this));
 
     this.scene = new THREE.Scene();
-    this.camera = new THREE.PerspectiveCamera(30, window.innerWidth / window.innerHeight, 10, 10000);
+    this.camera = new THREE.PerspectiveCamera(30, window.innerWidth / window.innerHeight, 10, 40000);
 
     this.raycaster = new THREE.Raycaster();
+
+    const days = timeSinceEpoch(new Date(1979, 1, 26, 16, 0, 50));
+    const pos = moonOrbit(system.sun, system.planets[2].moons[0], days);
+    console.log(pos);
   }
 
   ngAfterViewInit() {
@@ -74,14 +79,22 @@ export class SystemComponent implements AfterViewInit {
     this.composer.addPass(new RenderPass(this.scene, this.camera));
     this.composer.addPass(new SMAAPass(this.scene, this.camera));
 
-    this.drawInnerSystem();
-    //this.drawSubsystem(system.planets[2]);
+    this.renderScene();
+  }
+
+  renderScene() {
+    if (this.currentSystem === -1) {
+      this.drawInnerSystem();
+    } else {
+      this.drawSubsystem(system.planets[this.currentSystem]);
+    }
   }
 
   drawInnerSystem() {
     this.camera.position.set(0, 200, 500);
 
-    system.planets.forEach(planet => this.createPlanet(planet, system.config.orbitScale, system.config.planetScale));
+    const day = daysSinceEpoch();
+    system.planets.forEach(planet => this.createPlanet(day, planet, system.config.orbitScale, system.config.planetScale));
     this.createSun();
 
     // Lights
@@ -94,16 +107,13 @@ export class SystemComponent implements AfterViewInit {
   drawSubsystem(subsystem) {
     this.camera.position.set(0, 100, 220);
 
-    const epoch = moment([1990, 0, 1]);
-    const now = moment(new Date());
-    let day = now.diff(epoch, 'days');
+    const day = daysSinceEpoch();
+    const curr = planetOrbit(day, subsystem).multiplyScalar(-1).normalize();
 
-    const curr = calculateLocation(day, subsystem).multiplyScalar(-1).normalize();
-
-    this.createPlanet(subsystem, subsystem.config.orbitScale, subsystem.config.planetScale, curr, true);
+    this.createPlanet(day, subsystem, subsystem.config.orbitScale, subsystem.config.planetScale, curr, true);
 
     subsystem.moons.forEach(moon => {
-      this.createPlanet(moon, subsystem.config.orbitScale, subsystem.config.planetScale);
+      this.createPlanet(day, moon, subsystem.config.orbitScale, subsystem.config.planetScale);
     });
 
     const light = new THREE.DirectionalLight();
@@ -128,27 +138,6 @@ export class SystemComponent implements AfterViewInit {
   animate() {
     this.scene.traverse(this.animateCallback.bind(this));
 
-    this.raycaster.setFromCamera(this.pointer, this.camera);
-    const intersects = this.raycaster.intersectObjects(this.scene.children);
-
-    if (intersects.length > 0) {
-      intersects.forEach(i => {
-        if (this.selectables.indexOf(i.object.uuid) >= 0) {
-          if (this.selectedObject !== undefined && this.selectedObject.uuid !== i.object.uuid) {
-            this.selectedObject.material.color.setRGB(1, 1, 1);
-            this.selectedObject = undefined;
-          }
-          i.object.material.color.setRGB(0.3, 0.7, 0.8);
-          this.selectedObject = i.object;
-        }
-      });
-    } else {
-      if (this.selectedObject !== undefined) {
-        this.selectedObject.material.color.setRGB(1, 1, 1);
-        this.selectedObject = undefined;
-      }
-    }
-
     requestAnimationFrame(this.animate.bind(this));
     this.controls.update();
     this.composer.render();
@@ -159,8 +148,29 @@ export class SystemComponent implements AfterViewInit {
   onPointerMove(event) {
     // calculate pointer position in normalized device coordinates
     // (-1 to +1) for both components
-    this.pointer.x = (event.clientX / window.innerWidth) * 2 - 1;
-    this.pointer.y = - (event.clientY / window.innerHeight) * 2 + 1;
+    if (event.buttons === 0) {
+      const mouseLoc = new THREE.Vector2((event.clientX / window.innerWidth) * 2 - 1, -(event.clientY / window.innerHeight) * 2 + 1);
+      this.raycaster.setFromCamera(mouseLoc, this.camera);
+      const intersects = this.raycaster.intersectObjects(this.scene.children);
+
+      if (intersects.length > 0) {
+        intersects.forEach(i => {
+          if (this.selectables.indexOf(i.object.uuid) >= 0) {
+            if (this.selectedObject !== undefined && this.selectedObject.uuid !== i.object.uuid) {
+              this.selectedObject.material.color.setRGB(1, 1, 1);
+              this.selectedObject = undefined;
+            }
+            i.object.material.color.setRGB(0.3, 0.7, 0.8);
+            this.selectedObject = i.object;
+          }
+        });
+      } else {
+        if (this.selectedObject !== undefined) {
+          this.selectedObject.material.color.setRGB(1, 1, 1);
+          this.selectedObject = undefined;
+        }
+      }
+    }
   }
 
   onClick(event) {
@@ -210,13 +220,11 @@ export class SystemComponent implements AfterViewInit {
 
     const numPoints = config.Period * TROPICAL_YEAR;
 
-    const epoch = moment([1990, 0, 1]);
-    const now = moment(new Date());
-    let day = now.diff(epoch, 'days');
+    let day = daysSinceEpoch();
 
     // Creste points and colors
     for (let i = 0; i < numPoints; i++) {
-      const curr = this.scaleOrbit(calculateLocation(day, config), scale);
+      const curr = this.scaleOrbit(planetOrbit(day, config), scale);
       vertices.push(curr.x, curr.y, curr.z);
 
       const v = i / numPoints + 0.15;
@@ -244,10 +252,7 @@ export class SystemComponent implements AfterViewInit {
     //return s.multiplyScalar(0.0002);
   }
 
-  createPlanet(config, orbitScale, planetScale, lightDir = null, isTopLevel: boolean = false) {
-    const epoch = moment([1990, 0, 1]);
-    const now = moment();
-    let day = now.diff(epoch, 'days');
+  createPlanet(day, config, orbitScale, planetScale, lightDir = null, isTopLevel: boolean = false) {
 
     // Planet
     const radius = this.scalePlanet(config.Radius, planetScale);
@@ -283,18 +288,18 @@ export class SystemComponent implements AfterViewInit {
 
     planet.geometry.computeTangents();
 
-    let secs = now.get('hours') * 3600;
-    secs += now.get('seconds') * 60;
-    secs += now.get('seconds');
+    // let secs = now.get('hours') * 3600;
+    // secs += now.get('seconds') * 60;
+    // secs += now.get('seconds');
 
-    const p = secs / (24 * 3600);
+    //const p = secs / (24 * 3600);
     //planet.rotateY(-p * Math.PI * 2);
 
     const group = new THREE.Group();
     group.add(planet);
     this.selectables.push(planet.uuid);
 
-    const location = calculateLocation(day, config);
+    const location = planetOrbit(day, config);
 
     if (config.Rings) {
       group.add(this.createRings(config));
@@ -316,7 +321,7 @@ export class SystemComponent implements AfterViewInit {
     this.scene.add(group);
 
     if (!isTopLevel) {
-      const curr = this.scaleOrbit(calculateLocation(day, config), orbitScale);
+      const curr = this.scaleOrbit(planetOrbit(day, config), orbitScale);
       group.position.set(curr.x, curr.y, curr.z);
       this.createOrbit(config, orbitScale);
     }
