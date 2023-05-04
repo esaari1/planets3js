@@ -33,13 +33,16 @@ export class AnimatedMaterial extends THREE.Mesh implements Updateable {
 
 export class PlanetMarker extends THREE.Group implements Updateable {
 
-    constructor(name: string) {
+    pos: THREE.Vector3;
+
+    constructor(name: string, color: string, position: THREE.Vector3) {
         super();
-        this.createCircle();
+        this.createCircle(color);
         this.createLabel(name);
+        this.pos = position;
     }
 
-    createCircle() {
+    createCircle(color: string) {
         const circle = new THREE.CircleGeometry(1.0, 30.0);
 
         // Remove center vertex
@@ -53,7 +56,7 @@ export class PlanetMarker extends THREE.Group implements Updateable {
         );
         circle.index = null;
 
-        const material = new THREE.LineBasicMaterial({ color: 'rgb(75%, 70%, 100%)' });
+        const material = new THREE.LineBasicMaterial({ color: color });
 
         super.add(new THREE.LineLoop(circle, material));
     }
@@ -69,8 +72,8 @@ export class PlanetMarker extends THREE.Group implements Updateable {
         ctx.fillRect(0, 0, canvas.width, canvas.height);
 
         ctx.fillStyle = '#ffffff';
-        ctx.font = "15px Arial";
-        ctx.fillText(name, 5, 20);
+        ctx.font = "11px Arial";
+        ctx.fillText(name.toUpperCase(), 0, 18);
 
         const texture = new THREE.CanvasTexture(canvas);
 
@@ -86,8 +89,11 @@ export class PlanetMarker extends THREE.Group implements Updateable {
     }
 
     update(controls: THREE.OrbitControls, time: number) {
-        const p = controls.getDistance() / controls.minDistance * 0.7;
+        const p = controls.getDistance() / controls.minDistance * 0.6;
         this['scale'].set(p, p, p);
+
+        this['position'].set(0, 0, 0);
         super.lookAt(controls.object.position);
+        this['position'].set(this.pos.x, this.pos.y, this.pos.z);
     }
 }

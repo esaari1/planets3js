@@ -52,6 +52,18 @@ export class SystemComponent implements AfterViewInit {
 
   currentSystem = -1;
 
+  colors = [
+    '#9768ac',
+    '#b07919',
+    '#09c',
+    '#9a4e19',
+    '#da8b72',
+    '#d5c187',
+    '#68ccda',
+    '#708ce3',
+    '#f7f4df'
+  ]
+
   ngOnInit() {
     window.addEventListener('pointermove', this.onPointerMove.bind(this));
     window.addEventListener('click', this.onClick.bind(this));
@@ -96,7 +108,7 @@ export class SystemComponent implements AfterViewInit {
     this.camera.position.set(0, 200, 500);
 
     const day = daysSinceEpoch();
-    system.planets.forEach(planet => this.createPlanetMarker(day, planet, system.config.orbitScale));
+    system.planets.forEach((planet, i) => this.createPlanetMarker(day, planet, system.config.orbitScale, this.colors[i]));
     this.createSun();
 
     // Lights
@@ -210,7 +222,7 @@ export class SystemComponent implements AfterViewInit {
     this.scene.add(group);
   }
 
-  createOrbit(config, scale) {
+  createOrbit(config, scale, color) {
     // Line material
     const material = new THREE.LineBasicMaterial({
       vertexColors: true,
@@ -224,13 +236,15 @@ export class SystemComponent implements AfterViewInit {
 
     let day = daysSinceEpoch();
 
+    const rgb = this.hexToRgb(color);
+
     // Creste points and colors
     for (let i = 0; i < numPoints; i++) {
       const curr = this.scaleOrbit(planetOrbit(day, config), scale);
       vertices.push(curr.x, curr.y, curr.z);
 
       const v = i / numPoints + 0.15;
-      colors.push(v * .75, v * .7, v);
+      colors.push(rgb.r * v, rgb.g * v, rgb.b * v);
       day++;
     }
 
@@ -254,14 +268,12 @@ export class SystemComponent implements AfterViewInit {
     //return s.multiplyScalar(0.0002);
   }
 
-  createPlanetMarker(day, config, orbitScale) {
+  createPlanetMarker(day, config, orbitScale, color) {
     const position = this.scaleOrbit(planetOrbit(day, config), orbitScale);
-
-    const mesh = new PlanetMarker(config.Name);
-    mesh['position'].set(position.x, position.y, position.z);
+    const mesh = new PlanetMarker(config.Name, color, position);
     this.scene.add(mesh);
-
-    this.createOrbit(config, orbitScale);
+    this.createOrbit(config, orbitScale, color);
+    mesh['children'].forEach(c => this.selectables.push(c.uuid));
   }
 
   createPlanet(day, config, orbitScale, planetScale, lightDir = null, isTopLevel: boolean = false) {
@@ -309,7 +321,6 @@ export class SystemComponent implements AfterViewInit {
 
     const group = new THREE.Group();
     group.add(planet);
-    this.selectables.push(planet.uuid);
 
     const location = planetOrbit(day, config);
 
@@ -335,7 +346,7 @@ export class SystemComponent implements AfterViewInit {
     if (!isTopLevel) {
       const curr = this.scaleOrbit(planetOrbit(day, config), orbitScale);
       group.position.set(curr.x, curr.y, curr.z);
-      this.createOrbit(config, orbitScale);
+      this.createOrbit(config, orbitScale, '');
     }
   }
 
@@ -392,5 +403,20 @@ export class SystemComponent implements AfterViewInit {
     });
 
     return new Atmosphere(geometry, material, this.camera.position);
+  }
+
+  hexToRgb(hex) {
+    // Expand shorthand form (e.g. "03F") to full form (e.g. "0033FF")
+    var shorthandRegex = /^#?([a-f\d])([a-f\d])([a-f\d])$/i;
+    hex = hex.replace(shorthandRegex, function (m, r, g, b) {
+      return r + r + g + g + b + b;
+    });
+
+    var result = /^#?([a-f\d]{2})([a-f\d]{2})([a-f\d]{2})$/i.exec(hex);
+    return result ? {
+      r: parseInt(result[1], 16) / 255,
+      g: parseInt(result[2], 16) / 255,
+      b: parseInt(result[3], 16) / 255
+    } : null;
   }
 }
