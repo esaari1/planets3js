@@ -2,6 +2,11 @@ import { AU_TO_KM, DAYS_TO_DEG, DEG_TO_RAD, RAD_TO_DEG, TROPICAL_YEAR, epsilon }
 import * as THREE from 'three';
 import { daysSinceEpoch } from "../util/time";
 
+/**
+ * Calculations taken from Practical Astronomy Wih Your Calculator (3rd Edition)
+ * by Peter Duffett-Smith. Copyright (C) Cambridge University Press 1979.
+ * Section 54 - Calculating the Coordinates of a Planet.
+ */
 export function planetOrbit(days: number, orbit) {
     // Calculate the mean anomaly
     const M = (360.0 / TROPICAL_YEAR) * (days / orbit.Period) + orbit.LongAtEpoch - orbit.LongOfPerihelion;
@@ -60,6 +65,11 @@ export function sunPosition(config, days: number = undefined) {
     return eclipticToEquitorial(longitude, 0);
 }
 
+/**
+ * Calculations taken from Practical Astronomy Wih Your Calculator (3rd Edition)
+ * by Peter Duffett-Smith. Copyright (C) Cambridge University Press 1979.
+ * Section 65
+ */
 export function moonOrbit(sunConfig, moonConfig, days: number = undefined) {
     const Ns = adjustBearing(days * DAYS_TO_DEG);
     const Ms = adjustBearing(Ns + sunConfig.LongAtEpoch - sunConfig.LongOfPerigee);
@@ -109,6 +119,12 @@ export function moonOrbit(sunConfig, moonConfig, days: number = undefined) {
     const atan = normalizedArctan(y, x);
     const longitude = adjustBearing(N2 + atan);
     const latitude = Math.asin(sl2n2 * Math.sin(moonConfig.Inclination * DEG_TO_RAD)) * RAD_TO_DEG;
+
+    // From section 69 - get distance from earth to moon
+    //Mm2 and Ec2
+    const p = (1 - moonConfig.Eccentricity * moonConfig.Eccentricity) / (1 + moonConfig.Eccentricity * Math.cos((Mm2 + Ec2) * DEG_TO_RAD));
+
+    console.log(Mm2, Ec2, p);
 
     return eclipticToEquitorial(longitude, latitude);
 }
