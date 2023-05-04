@@ -27,7 +27,7 @@ import { RenderPass } from 'three/examples/jsm/postprocessing/RenderPass.js';
 import { SMAAPass } from 'three/examples/jsm/postprocessing/SMAAPass.js';
 
 import { DEG_TO_RAD, TROPICAL_YEAR, atmosphereUniforms } from '../constants';
-import { AnimatedMaterial, Atmosphere, isUpdateable } from '../models/updateable';
+import { AnimatedMaterial, Atmosphere, PlanetMarker, isUpdateable } from '../models/updateable';
 import { daysSinceEpoch, timeSinceEpoch } from '../util/time';
 import { moonOrbit, planetOrbit } from './orbit';
 
@@ -75,6 +75,8 @@ export class SystemComponent implements AfterViewInit {
     renderer.setPixelRatio(window.devicePixelRatio);
 
     this.controls = new OrbitControls(this.camera, renderer.domElement);
+    this.controls.minDistance = 100;
+    this.controls.maxDistance = 30000;
     this.composer = new EffectComposer(renderer);
     this.composer.addPass(new RenderPass(this.scene, this.camera));
     this.composer.addPass(new SMAAPass(this.scene, this.camera));
@@ -94,7 +96,7 @@ export class SystemComponent implements AfterViewInit {
     this.camera.position.set(0, 200, 500);
 
     const day = daysSinceEpoch();
-    system.planets.forEach(planet => this.createPlanet(day, planet, system.config.orbitScale, system.config.planetScale));
+    system.planets.forEach(planet => this.createPlanetMarker(day, planet, system.config.orbitScale));
     this.createSun();
 
     // Lights
@@ -131,7 +133,7 @@ export class SystemComponent implements AfterViewInit {
   // Check if object implements Updateable interface and calls update if it does.
   animateCallback(e) {
     if (isUpdateable(e)) {
-      e.update(this.camera.position, this.time);
+      e.update(this.controls, this.time);
     }
   }
 
@@ -250,6 +252,16 @@ export class SystemComponent implements AfterViewInit {
   scaleOrbit(s: THREE.Vector3, scalar): THREE.Vector3 {
     return s.multiplyScalar(scalar);
     //return s.multiplyScalar(0.0002);
+  }
+
+  createPlanetMarker(day, config, orbitScale) {
+    const position = this.scaleOrbit(planetOrbit(day, config), orbitScale);
+
+    const mesh = new PlanetMarker(config.Name);
+    mesh['position'].set(position.x, position.y, position.z);
+    this.scene.add(mesh);
+
+    this.createOrbit(config, orbitScale);
   }
 
   createPlanet(day, config, orbitScale, planetScale, lightDir = null, isTopLevel: boolean = false) {
