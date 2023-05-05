@@ -1,12 +1,5 @@
 import * as THREE from 'three';
-
-export interface AnimateUpdateable {
-    update(time: number);
-}
-
-export function isAnimateUpdateable(a) {
-    return a.isAnimateUpdateable;
-}
+import { AnimateUpdateable } from './interfaces';
 
 export class AnimatedMaterial extends THREE.Mesh implements AnimateUpdateable {
 

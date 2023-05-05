@@ -1,12 +1,6 @@
 import * as THREE from 'three';
-
-export interface CameraUpdateable {
-    update(controls: THREE.OrbitControls);
-}
-
-export function isCameraUpdateable(a) {
-    return a.isCameraUpdateable;
-}
+import { CameraUpdateable, Selectable } from './interfaces';
+import { shadeColor } from '../util/util';
 
 export class Atmosphere extends THREE.Mesh implements CameraUpdateable {
 
@@ -21,19 +15,32 @@ export class Atmosphere extends THREE.Mesh implements CameraUpdateable {
     }
 }
 
-export class PlanetMarker extends THREE.Group implements CameraUpdateable {
+export class PlanetMarker extends THREE.Group implements CameraUpdateable, Selectable {
 
     pos: THREE.Vector3;
+    subGroup;
+    line;
+    color: string;
+    selectedColor: string;
 
     constructor(name: string, color: string, position: THREE.Vector3) {
         super();
+        this.color = color;
+        this.selectedColor = shadeColor(color, 105);
+
         this['isCameraUpdateable'] = true;
-        this.createCircle(color);
+        this.subGroup = new THREE.Group();
+        super.add(this.subGroup);
+        this.createCircle();
         this.createLabel(name);
         this.pos = position;
     }
 
-    createCircle(color: string) {
+    add(obj) {
+        super.add(obj);
+    }
+
+    createCircle() {
         const circle = new THREE.CircleGeometry(1.0, 30.0);
 
         // Remove center vertex
@@ -47,9 +54,13 @@ export class PlanetMarker extends THREE.Group implements CameraUpdateable {
         );
         circle.index = null;
 
-        const material = new THREE.LineBasicMaterial({ color: color });
+        const material = new THREE.LineBasicMaterial({ color: this.color });
 
-        super.add(new THREE.LineLoop(circle, material));
+        this.line = new THREE.LineLoop(circle, material)
+        this.line['isSelectable'] = true;
+        this.line['select'] = this.select.bind(this);
+        this.line['unselect'] = this.unselect.bind(this);
+        this.subGroup.add(this.line);
     }
 
     createLabel(name: string) {
@@ -76,15 +87,27 @@ export class PlanetMarker extends THREE.Group implements CameraUpdateable {
         });
         const plane = new THREE.Mesh(geometry, material);
         plane.position.set(7, 0);
-        super.add(plane);
+        this.subGroup.add(plane);
+
+        plane['isSelectable'] = true;
+        plane['select'] = this.select.bind(this);
+        plane['unselect'] = this.unselect.bind(this);
     }
 
     update(controls: THREE.OrbitControls) {
         const p = controls.getDistance() / controls.minDistance * 0.6;
-        this['scale'].set(p, p, p);
+        this.subGroup.scale.set(p, p, p);
 
-        this['position'].set(0, 0, 0);
-        super.lookAt(controls.object.position);
-        this['position'].set(this.pos.x, this.pos.y, this.pos.z);
+        this.subGroup.position.set(0, 0, 0);
+        this.subGroup.lookAt(controls.object.position);
+        this.subGroup.position.set(this.pos.x, this.pos.y, this.pos.z);
+    }
+
+    select() {
+        this.line.material.color.set(this.selectedColor);
+    }
+
+    unselect() {
+        this.line.material.color.set(this.color);
     }
 }

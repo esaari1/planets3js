@@ -27,10 +27,11 @@ import { RenderPass } from 'three/examples/jsm/postprocessing/RenderPass.js';
 import { SMAAPass } from 'three/examples/jsm/postprocessing/SMAAPass.js';
 
 import { DEG_TO_RAD, TROPICAL_YEAR, atmosphereUniforms } from '../constants';
-import { AnimatedMaterial, isAnimateUpdateable } from '../models/animate_updateable';
+import { AnimatedMaterial } from '../models/animate_updateable';
 import { daysSinceEpoch, timeSinceEpoch } from '../util/time';
 import { moonOrbit, planetOrbit } from './orbit';
-import { Atmosphere, PlanetMarker, isCameraUpdateable } from '../models/camera_updateable';
+import { Atmosphere, PlanetMarker } from '../models/camera_updateable';
+import { isAnimateUpdateable, isCameraUpdateable } from '../models/interfaces';
 
 @Component({
   selector: 'system',
@@ -47,7 +48,7 @@ export class SystemComponent implements AfterViewInit {
   composer: EffectComposer;
   raycaster: THREE.Raycaster;
 
-  selectables = [];
+  //selectables = [];
   selectedObject = undefined;
   time = 0.0;
 
@@ -56,7 +57,7 @@ export class SystemComponent implements AfterViewInit {
   colors = [
     '#9768ac',
     '#b07919',
-    '#09c',
+    '#0099cc',
     '#9a4e19',
     '#da8b72',
     '#d5c187',
@@ -181,18 +182,19 @@ export class SystemComponent implements AfterViewInit {
 
       if (intersects.length > 0) {
         intersects.forEach(i => {
-          if (this.selectables.indexOf(i.object.uuid) >= 0) {
+          if (i.object.isSelectable) {
             if (this.selectedObject !== undefined && this.selectedObject.uuid !== i.object.uuid) {
-              this.selectedObject.material.color.setRGB(1, 1, 1);
+              i.object.unselect();
               this.selectedObject = undefined;
             }
-            i.object.material.color.setRGB(0.3, 0.7, 0.8);
+
+            i.object.select();
             this.selectedObject = i.object;
           }
         });
       } else {
         if (this.selectedObject !== undefined) {
-          this.selectedObject.material.color.setRGB(1, 1, 1);
+          this.selectedObject.unselect();
           this.selectedObject = undefined;
         }
       }
@@ -268,7 +270,7 @@ export class SystemComponent implements AfterViewInit {
     geometry.setAttribute('position', new THREE.Float32BufferAttribute(vertices, 3));
     geometry.setAttribute('color', new THREE.Float32BufferAttribute(colors, 3));
 
-    this.scene.add(new THREE.Line(geometry, material));
+    return new THREE.Line(geometry, material);
   }
 
   scalePlanet(s, config) {
@@ -283,9 +285,8 @@ export class SystemComponent implements AfterViewInit {
   createPlanetMarker(day, config, orbitScale, color) {
     const position = this.scaleOrbit(planetOrbit(day, config), orbitScale);
     const mesh = new PlanetMarker(config.Name, color, position);
+    mesh.add(this.createOrbit(config, orbitScale, color));
     this.scene.add(mesh);
-    this.createOrbit(config, orbitScale, color);
-    mesh['children'].forEach(c => this.selectables.push(c.uuid));
   }
 
   createPlanet(day, config, orbitScale, planetScale, lightDir = null, isTopLevel: boolean = false) {
