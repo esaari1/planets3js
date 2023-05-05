@@ -1,4 +1,4 @@
-import { AU_TO_KM, DAYS_TO_DEG, DEG_TO_RAD, RAD_TO_DEG, TROPICAL_YEAR, epsilon } from "../constants";
+import { AU_TO_KM, DAYS_TO_DEG, DEG_TO_RAD, RAD_TO_DEG, TROPICAL_YEAR, epsilon } from "../util/constants";
 import * as THREE from 'three';
 import { daysSinceEpoch } from "../util/time";
 

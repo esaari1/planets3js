@@ -3,7 +3,7 @@ import { Component, ElementRef, ViewChild } from '@angular/core';
 import * as THREE from 'three';
 import { OrbitControls } from 'three/examples/jsm/controls/OrbitControls.js';
 
-import { atmosphereUniforms } from '../constants';
+import { atmosphereUniforms } from '../util/util';
 
 // @ts-ignore
 import rayleighV from '../shaders/rayleigh.vert';

@@ -6,7 +6,7 @@ import { EffectComposer } from 'three/examples/jsm/postprocessing/EffectComposer
 import { RenderPass } from 'three/examples/jsm/postprocessing/RenderPass.js';
 import { SMAAPass } from 'three/examples/jsm/postprocessing/SMAAPass.js';
 
-import { atmosphereUniforms } from '../constants';
+import { atmosphereUniforms } from '../util/util';
 
 // @ts-ignore
 import rayleighV from '../shaders/rayleigh.vert';

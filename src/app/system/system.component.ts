@@ -26,12 +26,13 @@ import { EffectComposer } from 'three/examples/jsm/postprocessing/EffectComposer
 import { RenderPass } from 'three/examples/jsm/postprocessing/RenderPass.js';
 import { SMAAPass } from 'three/examples/jsm/postprocessing/SMAAPass.js';
 
-import { DEG_TO_RAD, TROPICAL_YEAR, atmosphereUniforms } from '../constants';
+import { DEG_TO_RAD, TROPICAL_YEAR } from '../util/constants';
 import { AnimatedMaterial } from '../models/animate_updateable';
 import { daysSinceEpoch, timeSinceEpoch } from '../util/time';
 import { moonOrbit, planetOrbit } from './orbit';
 import { Atmosphere, PlanetMarker } from '../models/camera_updateable';
 import { isAnimateUpdateable, isCameraUpdateable } from '../models/interfaces';
+import { atmosphereUniforms } from '../util/util';
 
 @Component({
   selector: 'system',

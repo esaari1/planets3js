@@ -2,7 +2,7 @@ import { Component, EventEmitter, OnInit, Output } from '@angular/core';
 
 import * as dat from 'dat.gui';
 import * as THREE from 'three';
-import { DEG_TO_RAD } from '../constants';
+import { DEG_TO_RAD } from '../util/constants';
 
 @Component({
   selector: 'planet-settings',
