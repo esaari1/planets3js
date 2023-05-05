@@ -54,6 +54,9 @@ export class MarsComponent {
     animate();
 
     function animate() {
+      t.surface.material.uniforms.fCameraHeight2.value = camera.position.distanceToSquared(t.surface.position);
+      t.sky.material.uniforms.fCameraHeight2.value = camera.position.distanceToSquared(t.surface.position);
+
       requestAnimationFrame(animate);
       controls.update();
       renderer.render(scene, camera);
