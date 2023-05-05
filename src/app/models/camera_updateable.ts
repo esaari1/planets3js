@@ -1,42 +1,33 @@
 import * as THREE from 'three';
 
-export interface Updateable {
-    update(controls: THREE.OrbitControls, time: number);
+export interface CameraUpdateable {
+    update(controls: THREE.OrbitControls);
 }
 
-export function isUpdateable(a) {
-    return 'update' in a;
+export function isCameraUpdateable(a) {
+    return a.isCameraUpdateable;
 }
 
-export class Atmosphere extends THREE.Mesh implements Updateable {
+export class Atmosphere extends THREE.Mesh implements CameraUpdateable {
 
     constructor(geometry = new THREE.BufferGeometry(), material = new THREE.MeshBasicMaterial(), cameraPos: THREE.Vector3) {
         super(geometry, material);
         this['material'].uniforms.fCameraHeight2.value = cameraPos.distanceToSquared(this['position']);
+        this['isCameraUpdateable'] = true;
     }
 
-    update(controls: THREE.OrbitControls, time: number) {
+    update(controls: THREE.OrbitControls) {
         this['material'].uniforms.fCameraHeight2.value = controls.object.position.distanceToSquared(this['position']);
     }
 }
 
-export class AnimatedMaterial extends THREE.Mesh implements Updateable {
-
-    constructor(geometry = new THREE.BufferGeometry(), material = new THREE.MeshBasicMaterial()) {
-        super(geometry, material);
-    }
-
-    update(controls: THREE.OrbitControls, time: number) {
-        this['material'].uniforms.time.value = time;
-    }
-}
-
-export class PlanetMarker extends THREE.Group implements Updateable {
+export class PlanetMarker extends THREE.Group implements CameraUpdateable {
 
     pos: THREE.Vector3;
 
     constructor(name: string, color: string, position: THREE.Vector3) {
         super();
+        this['isCameraUpdateable'] = true;
         this.createCircle(color);
         this.createLabel(name);
         this.pos = position;
@@ -88,7 +79,7 @@ export class PlanetMarker extends THREE.Group implements Updateable {
         super.add(plane);
     }
 
-    update(controls: THREE.OrbitControls, time: number) {
+    update(controls: THREE.OrbitControls) {
         const p = controls.getDistance() / controls.minDistance * 0.6;
         this['scale'].set(p, p, p);
 

@@ -27,9 +27,10 @@ import { RenderPass } from 'three/examples/jsm/postprocessing/RenderPass.js';
 import { SMAAPass } from 'three/examples/jsm/postprocessing/SMAAPass.js';
 
 import { DEG_TO_RAD, TROPICAL_YEAR, atmosphereUniforms } from '../constants';
-import { AnimatedMaterial, Atmosphere, PlanetMarker, isUpdateable } from '../models/updateable';
+import { AnimatedMaterial, isAnimateUpdateable } from '../models/animate_updateable';
 import { daysSinceEpoch, timeSinceEpoch } from '../util/time';
 import { moonOrbit, planetOrbit } from './orbit';
+import { Atmosphere, PlanetMarker, isCameraUpdateable } from '../models/camera_updateable';
 
 @Component({
   selector: 'system',
@@ -89,11 +90,22 @@ export class SystemComponent implements AfterViewInit {
     this.controls = new OrbitControls(this.camera, renderer.domElement);
     this.controls.minDistance = 100;
     this.controls.maxDistance = 30000;
+    this.controls.addEventListener( 'change', this.controlsUpdate.bind(this) );
     this.composer = new EffectComposer(renderer);
     this.composer.addPass(new RenderPass(this.scene, this.camera));
     this.composer.addPass(new SMAAPass(this.scene, this.camera));
 
     this.renderScene();
+  }
+
+  controlsUpdate() {
+    this.scene.traverse(this.cmeraCallback.bind(this));
+  }
+
+  cmeraCallback(e) {
+    if (isCameraUpdateable(e)) {
+      e.update(this.controls);
+    }
   }
 
   renderScene() {
@@ -144,8 +156,8 @@ export class SystemComponent implements AfterViewInit {
   // Called for each object in the scene during animation loop.
   // Check if object implements Updateable interface and calls update if it does.
   animateCallback(e) {
-    if (isUpdateable(e)) {
-      e.update(this.controls, this.time);
+    if (isAnimateUpdateable(e)) {
+      e.update(this.time);
     }
   }
 
