@@ -20,6 +20,7 @@ export class PlanetMarker extends THREE.Group implements CameraUpdateable, Selec
     pos: THREE.Vector3;
     subGroup;
     line;
+    name: string;
     color: string;
     selectedColor: string;
 
@@ -27,6 +28,7 @@ export class PlanetMarker extends THREE.Group implements CameraUpdateable, Selec
         super();
         this.color = color;
         this.selectedColor = shadeColor(color, 105);
+        this.name = name;
 
         this['isCameraUpdateable'] = true;
         this.subGroup = new THREE.Group();
@@ -60,6 +62,8 @@ export class PlanetMarker extends THREE.Group implements CameraUpdateable, Selec
         this.line['isSelectable'] = true;
         this.line['select'] = this.select.bind(this);
         this.line['unselect'] = this.unselect.bind(this);
+        this.line['getPosition'] = this.getPosition.bind(this);
+        this.line.name = this.name;
         this.subGroup.add(this.line);
     }
 
@@ -92,6 +96,7 @@ export class PlanetMarker extends THREE.Group implements CameraUpdateable, Selec
         plane['isSelectable'] = true;
         plane['select'] = this.select.bind(this);
         plane['unselect'] = this.unselect.bind(this);
+        plane.name = this.name;
     }
 
     update(controls: THREE.OrbitControls) {
@@ -109,5 +114,9 @@ export class PlanetMarker extends THREE.Group implements CameraUpdateable, Selec
 
     unselect() {
         this.line.material.color.set(this.color);
+    }
+
+    getPosition(): THREE.Vector3 {
+        return this.pos;
     }
 }

@@ -19,6 +19,7 @@ import mieV from '../shaders/mie.vert';
 // @ts-ignore
 import mieF from '../shaders/mie.frag';
 
+import * as TWEEN from '@tweenjs/tween.js';
 import * as THREE from 'three';
 
 import { OrbitControls } from 'three/examples/jsm/controls/OrbitControls.js';
@@ -26,13 +27,13 @@ import { EffectComposer } from 'three/examples/jsm/postprocessing/EffectComposer
 import { RenderPass } from 'three/examples/jsm/postprocessing/RenderPass.js';
 import { SMAAPass } from 'three/examples/jsm/postprocessing/SMAAPass.js';
 
-import { DEG_TO_RAD, TROPICAL_YEAR } from '../util/constants';
 import { AnimatedMaterial } from '../models/animate_updateable';
-import { daysSinceEpoch, timeSinceEpoch } from '../util/time';
-import { moonOrbit, planetOrbit } from './orbit';
 import { Atmosphere, PlanetMarker } from '../models/camera_updateable';
 import { isAnimateUpdateable, isCameraUpdateable } from '../models/interfaces';
+import { DEG_TO_RAD, TROPICAL_YEAR } from '../util/constants';
+import { daysSinceEpoch } from '../util/time';
 import { atmosphereUniforms } from '../util/util';
+import { planetOrbit } from './orbit';
 
 @Component({
   selector: 'system',
@@ -52,6 +53,8 @@ export class SystemComponent implements AfterViewInit {
   //selectables = [];
   selectedObject = undefined;
   time = 0.0;
+  tween = undefined;
+  tween2 = undefined;
 
   currentSystem = -1;
 
@@ -75,10 +78,6 @@ export class SystemComponent implements AfterViewInit {
     this.camera = new THREE.PerspectiveCamera(30, window.innerWidth / window.innerHeight, 10, 40000);
 
     this.raycaster = new THREE.Raycaster();
-
-    const days = timeSinceEpoch(new Date(1979, 1, 26, 16, 0, 50));
-    const pos = moonOrbit(system.sun, system.planets[2].moons[0], days);
-    console.log(pos);
   }
 
   ngAfterViewInit() {
@@ -92,7 +91,7 @@ export class SystemComponent implements AfterViewInit {
     this.controls = new OrbitControls(this.camera, renderer.domElement);
     this.controls.minDistance = 100;
     this.controls.maxDistance = 30000;
-    this.controls.addEventListener( 'change', this.controlsUpdate.bind(this) );
+    this.controls.addEventListener('change', this.controlsUpdate.bind(this));
     this.composer = new EffectComposer(renderer);
     this.composer.addPass(new RenderPass(this.scene, this.camera));
     this.composer.addPass(new SMAAPass(this.scene, this.camera));
@@ -138,10 +137,10 @@ export class SystemComponent implements AfterViewInit {
     const day = daysSinceEpoch();
     const curr = planetOrbit(day, subsystem).multiplyScalar(-1).normalize();
 
-    this.createPlanet(day, subsystem, subsystem.config.orbitScale, subsystem.config.planetScale, curr, true);
+    this.createPlanet(day, subsystem, curr);
 
     subsystem.moons.forEach(moon => {
-      this.createPlanet(day, moon, subsystem.config.orbitScale, subsystem.config.planetScale);
+      this.createPlanet(day, moon, subsystem.config.orbitScale);
     });
 
     const light = new THREE.DirectionalLight();
@@ -169,6 +168,14 @@ export class SystemComponent implements AfterViewInit {
     requestAnimationFrame(this.animate.bind(this));
     this.controls.update();
     this.composer.render();
+
+    if (this.tween) {
+      this.tween.update();
+    }
+
+    if (this.tween2) {
+      this.tween2.update();
+    }
 
     this.time += 0.00025;
   }
@@ -202,8 +209,20 @@ export class SystemComponent implements AfterViewInit {
     }
   }
 
-  onClick(event) {
-    //console.log(this.selectedObject);
+  onClick() {
+    if (this.selectedObject) {
+      const p = this.selectedObject.getPosition();
+
+      this.tween2 = new TWEEN.Tween(this.camera.position, false)
+        .to(this.controls.target, 1000)
+        .easing(TWEEN.Easing.Quadratic.InOut);
+
+      this.tween = new TWEEN.Tween(this.controls.target, false)
+        .to({ x: p.x, y: p.y, z: p.z }, 1000)
+        .easing(TWEEN.Easing.Quadratic.InOut)
+        .start()
+        .chain(this.tween2);
+    }
   }
 
   createSun() {
@@ -290,18 +309,18 @@ export class SystemComponent implements AfterViewInit {
     this.scene.add(mesh);
   }
 
-  createPlanet(day, config, orbitScale, planetScale, lightDir = null, isTopLevel: boolean = false) {
+  createPlanet(day, config, lightDir = null) {
 
     // Planet
-    const radius = this.scalePlanet(config.Radius, planetScale);
-    const sphere = new THREE.SphereGeometry(radius, 50, 50);
+    //const radius = this.scalePlanet(config.Radius, planetScale);
+    const sphere = new THREE.SphereGeometry(100, 50, 50);
 
     let planet = undefined;
     let material = undefined;
 
-    if (config.atmosphere && isTopLevel) {
-      config.atmosphere.innerRadius = radius;
-      config.atmosphere.outerRadius = radius * config.atmosphere.multiplier;
+    if (config.atmosphere) {
+      config.atmosphere.innerRadius = 100;
+      config.atmosphere.outerRadius = 100 * config.atmosphere.multiplier;
 
       const uniforms = atmosphereUniforms(config.atmosphere);
       uniforms['tDiffuse'] = {
@@ -342,7 +361,7 @@ export class SystemComponent implements AfterViewInit {
       group.add(this.createRings(config));
     }
 
-    if (config.atmosphere && isTopLevel) {
+    if (config.atmosphere) {
       if (lightDir == null) {
         lightDir = location.multiplyScalar(-1).normalize();
       }
@@ -356,12 +375,6 @@ export class SystemComponent implements AfterViewInit {
     }
 
     this.scene.add(group);
-
-    if (!isTopLevel) {
-      const curr = this.scaleOrbit(planetOrbit(day, config), orbitScale);
-      group.position.set(curr.x, curr.y, curr.z);
-      this.createOrbit(config, orbitScale, '');
-    }
   }
 
   createRings(config) {
